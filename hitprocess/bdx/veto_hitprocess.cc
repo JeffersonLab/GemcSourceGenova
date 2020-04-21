@@ -9,6 +9,134 @@
 #include "CLHEP/Units/PhysicalConstants.h"
 using namespace CLHEP;
 
+typedef struct groupedHits {
+	double Esum;
+	double avgT;
+	G4ThreeVector avgPos;
+	G4ThreeVector avgLPos;
+};
+
+typedef struct aStep {
+	bool isMatchedToGroupedHit;
+	double E, T;
+	G4ThreeVector pos;
+	G4ThreeVector lpos;
+};
+
+//sort in DESCENDING energy
+bool compareSteps(const aStep &a, const aStep &b) {
+	return a.E > b.E;
+}
+
+bool isMatched(const aStep &a, const aStep &b, double dT = 1 * ns, double dX = 1 * cm) {
+	bool ret = false;
+	if ((fabs(a.T - b.T) <= dT) && ((a.pos - b.pos).mag() < dX)) {
+		ret = true;
+	}
+	return ret;
+}
+
+/*aHit contains all the steps in the IV or OV for BDXmini, within a large TimeWindow(TW).
+ This methods groups them together according to time and distance (dT=1 ns, dX=1cm)
+ */
+vector<groupedHits> sortBDXMiniVetoHits(MHit* aHit, double dT = 1 * ns, double dX = 1 * cm) {
+	vector<groupedHits> ghits;
+
+	auto times = aHit->GetTime();
+	auto pos = aHit->GetPos();
+	auto lpos = aHit->GetLPos();
+	auto ene = aHit->GetEdep();
+
+	vector<vector<int>> groupIDs;
+	vector<int> thisIDs;
+
+	//sort in deposited energy keeping order
+	aStep step;
+	vector<aStep> steps;
+	for (int ii = 0; ii < pos.size(); ii++) {
+		step.E = ene[ii];
+		step.T = times[ii];
+		step.pos = pos[ii];
+		step.lpos = lpos[ii];
+		step.isMatchedToGroupedHit = false;
+		steps.push_back(step);
+	}
+	std::sort(steps.begin(), steps.end(), compareSteps);
+
+	for (int ii = 0; ii < steps.size(); ii++) {
+		if (steps[ii].isMatchedToGroupedHit == false) { //create a new group
+			thisIDs.clear();
+			steps[ii].isMatchedToGroupedHit = true;
+			thisIDs.push_back(ii);
+
+			for (int jj = ii + 1; jj < steps.size(); jj++) {
+				if (steps[jj].isMatchedToGroupedHit == false) {
+					bool match = isMatched(steps[ii], steps[jj]);
+					if (match) {
+						steps[jj].isMatchedToGroupedHit = true;
+						thisIDs.push_back(jj);
+					}
+				}
+			}
+			groupIDs.push_back(thisIDs);
+		}
+	}
+
+	for (auto group : groupIDs) {
+		groupedHits ghit;
+		ghit.Esum = 0;
+		ghit.avgT = 0;
+		ghit.avgPos.set(0, 0, 0);
+		ghit.avgLPos.set(0, 0, 0);
+		for (auto id : group) {
+			ghit.Esum += steps[id].E;
+			ghit.avgT += steps[id].T * steps[id].E;
+			ghit.avgPos.setX(ghit.avgPos.x() + steps[id].E * steps[id].pos.x());
+			ghit.avgPos.setY(ghit.avgPos.y() + steps[id].E * steps[id].pos.y());
+			ghit.avgPos.setZ(ghit.avgPos.z() + steps[id].E * steps[id].pos.z());
+			ghit.avgLPos.setX(ghit.avgLPos.x() + steps[id].E * steps[id].lpos.x());
+			ghit.avgLPos.setY(ghit.avgLPos.y() + steps[id].E * steps[id].lpos.y());
+			ghit.avgLPos.setZ(ghit.avgLPos.z() + steps[id].E * steps[id].lpos.z());
+		}
+		if (ghit.Esum > 0) {
+			ghit.avgT /= ghit.Esum;
+			ghit.avgPos.setX(ghit.avgPos.x() / ghit.Esum);
+			ghit.avgPos.setY(ghit.avgPos.y() / ghit.Esum);
+			ghit.avgPos.setZ(ghit.avgPos.z() / ghit.Esum);
+
+			ghit.avgLPos.setX(ghit.avgLPos.x() / ghit.Esum);
+			ghit.avgLPos.setY(ghit.avgLPos.y() / ghit.Esum);
+			ghit.avgLPos.setZ(ghit.avgLPos.z() / ghit.Esum);
+
+			ghits.push_back(ghit);
+		}
+	}
+
+/*	std::cout << "STEPS: " << pos.size() << std::endl;
+	int aa = 0;
+	for (auto step : steps) {
+		std::cout << aa << " : " << step.E << " " << step.T << " " << step.pos.x() << " " << step.pos.y() << " " << step.pos.z() << std::endl;
+		aa++;
+	}
+	std::cout << "GROUPS: " << groupIDs.size() << std::endl;
+	aa = 0;
+	for (auto group : groupIDs) {
+		std::cout << aa << " ";
+		for (auto id : group)
+			std::cout << id << " ";
+		std::cout << std::endl;
+		aa++;
+	}
+	std::cout << "GROUPED HITS :" << ghits.size() << std::endl;
+	aa = 0;
+	for (auto ghit : ghits) {
+		std::cout << aa << " " << ghit.Esum << " " << ghit.avgT << " " << ghit.avgPos.x() << " " << ghit.avgPos.y() << " " << ghit.avgPos.z() << std::endl;
+		aa++;
+	}*/
+
+	return ghits;
+}
+
 map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	map<string, double> dgtz;
 	vector<identifier> identity = aHit->GetId();
@@ -73,209 +201,207 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	// Oveto == 5
 	// channel: run over the position (1=T 2=B 3=R 4=L 5=D 6=U)
 	if (veto_id == 5) {
-		{
-			double optical_coupling[13] = { 0., 0.94, 0.57, 0.35, 0.7, 0.094, 0.177, 0.52, 0.75, 0.52, 0.52, 0.38, 1.0 };
-			for (int s = 0; s < 13; s++)
-				optical_coupling[s] = optical_coupling[s] * 0.68;
-			light_yield = 9200 / MeV;
-			veff = 13 * cm / ns;
-			sensor_effective_area = 0.9;
-			sensor_qe = 0.25;
-			sensor_gain = 1.;
+		double optical_coupling[13] = { 0., 0.94, 0.57, 0.35, 0.7, 0.094, 0.177, 0.52, 0.75, 0.52, 0.52, 0.38, 1.0 };
+		for (int s = 0; s < 13; s++)
+			optical_coupling[s] = optical_coupling[s] * 0.68;
+		light_yield = 9200 / MeV;
+		veff = 13 * cm / ns;
+		sensor_effective_area = 0.9;
+		sensor_qe = 0.25;
+		sensor_gain = 1.;
 
-			// Upper/lower
-			if (channel == 1 || channel == 2) {
-				// Get the paddle length: in veto paddles are along z
-				length = aHit->GetDetector().dimensions[2];
-				double s1 = aHit->GetDetector().dimensions[0];
-				double s2 = aHit->GetDetector().dimensions[1];
-				paddle_surface = 2 * s1 * 2 * s2;
-				sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
-				att_length = 350 * cm;
-				light_guide_att = 1.0;
-				// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
-			}
-			if (channel == 5 || channel == 6)
-			// downstream upstream
-					{
-				double s1 = aHit->GetDetector().dimensions[0];
-				double s2 = aHit->GetDetector().dimensions[2];
-				paddle_surface = 2 * s1 * 2 * s2; // surface perpendicular to the pmt position Surf=XxZ
-				sensor_surface = pow((2.5 / 2) * cm, 2) * pi; //
-				att_length = 400 * cm; // longer att lenght to take into account the perpendicular readout
-				light_guide_att = 0.19; // no light guide
-				// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
-			}
-			if (channel == 3 || channel == 4)
-			//right left
-					{
-				// Get the paddle length: in veto paddles are along y
-				length = aHit->GetDetector().dimensions[1];
-				double s1 = aHit->GetDetector().dimensions[0];
-				double s2 = aHit->GetDetector().dimensions[2];
-				sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
-				paddle_surface = 2 * s1 * 2 * s2;
-				att_length = 350 * cm;
-				light_guide_att = 1.0;
-				// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
-			}
+		// Upper/lower
+		if (channel == 1 || channel == 2) {
+			// Get the paddle length: in veto paddles are along z
+			length = aHit->GetDetector().dimensions[2];
+			double s1 = aHit->GetDetector().dimensions[0];
+			double s2 = aHit->GetDetector().dimensions[1];
+			paddle_surface = 2 * s1 * 2 * s2;
+			sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
+			att_length = 350 * cm;
+			light_guide_att = 1.0;
+			// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
+		}
+		if (channel == 5 || channel == 6)
+		// downstream upstream
+				{
+			double s1 = aHit->GetDetector().dimensions[0];
+			double s2 = aHit->GetDetector().dimensions[2];
+			paddle_surface = 2 * s1 * 2 * s2; // surface perpendicular to the pmt position Surf=XxZ
+			sensor_surface = pow((2.5 / 2) * cm, 2) * pi; //
+			att_length = 400 * cm; // longer att lenght to take into account the perpendicular readout
+			light_guide_att = 0.19; // no light guide
+			// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
+		}
+		if (channel == 3 || channel == 4)
+		//right left
+				{
+			// Get the paddle length: in veto paddles are along y
+			length = aHit->GetDetector().dimensions[1];
+			double s1 = aHit->GetDetector().dimensions[0];
+			double s2 = aHit->GetDetector().dimensions[2];
+			sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
+			paddle_surface = 2 * s1 * 2 * s2;
+			att_length = 350 * cm;
+			light_guide_att = 1.0;
+			// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
+		}
 
-			light_coll = sensor_surface / paddle_surface;
-			if (sensor_surface > paddle_surface) light_coll = 1.;   // no more than the PMT size
-			light_coll = optical_coupling[1] * light_coll * sensor_effective_area * light_guide_att; // coupling [1] identical for all
-			//cout << " light collo " << light_coll     <<endl;
+		light_coll = sensor_surface / paddle_surface;
+		if (sensor_surface > paddle_surface) light_coll = 1.;   // no more than the PMT size
+		light_coll = optical_coupling[1] * light_coll * sensor_effective_area * light_guide_att; // coupling [1] identical for all
+		//cout << " light collo " << light_coll     <<endl;
 
-			// Get info about detector material to eveluate Birks effect
-			double birks_constant = aHit->GetDetector().GetLogical()->GetMaterial()->GetIonisation()->GetBirksConstant();
-			//	cout << " Birks constant is: " << birks_constant << endl;
-			//	cout << aHit->GetDetector().GetLogical()->GetMaterial()->GetName() << endl;
+		// Get info about detector material to eveluate Birks effect
+		double birks_constant = aHit->GetDetector().GetLogical()->GetMaterial()->GetIonisation()->GetBirksConstant();
+		//	cout << " Birks constant is: " << birks_constant << endl;
+		//	cout << aHit->GetDetector().GetLogical()->GetMaterial()->GetName() << endl;
 
-			double time_min[4] = { 0, 0, 0, 0 };
+		double time_min[4] = { 0, 0, 0, 0 };
 
-			vector<G4ThreeVector> Lpos = aHit->GetLPos();
-			vector<G4double> Edep = aHit->GetEdep();
-			vector<G4double> Dx = aHit->GetDx();
-			// Charge for each step
-			vector<int> charge = aHit->GetCharges();
-			vector<G4double> times = aHit->GetTime();
+		vector<G4ThreeVector> Lpos = aHit->GetLPos();
+		vector<G4double> Edep = aHit->GetEdep();
+		vector<G4double> Dx = aHit->GetDx();
+		// Charge for each step
+		vector<int> charge = aHit->GetCharges();
+		vector<G4double> times = aHit->GetTime();
 
-			unsigned int nsteps = Edep.size();
-			double Etot = 0;
+		unsigned int nsteps = Edep.size();
+		double Etot = 0;
 
-			for (unsigned int s = 0; s < nsteps; s++)
-				Etot = Etot + Edep[s];
+		for (unsigned int s = 0; s < nsteps; s++)
+			Etot = Etot + Edep[s];
 
-			if (Etot > 0) {
-				for (unsigned int s = 0; s < nsteps; s++) {
-					double dLeft = -10000.;
-					double dRight = -10000.;
+		if (Etot > 0) {
+			for (unsigned int s = 0; s < nsteps; s++) {
+				double dLeft = -10000.;
+				double dRight = -10000.;
 
-					// Distances from left, right for upper/lower (along z)
-					if (channel == 1 || channel == 2) {
-						dLeft = length - Lpos[s].z();
-						dRight = length + Lpos[s].z();
-					}
-					// Distances from top/bottom for side OV (along y)
-
-					if (channel == 3 || channel == 4) {
-						dLeft = length + Lpos[s].y();
-						dRight = length - Lpos[s].y();
-					}
-					if (channel == 5 || channel == 6)
-					// Distances from center for U/D OV (along y)
-
-							{
-						dLeft = Lpos[s].x();
-						dRight = Lpos[s].y();
-						double dCent = sqrt(dLeft * dLeft + dRight * dRight);
-						dRight = dCent;
-
-					}
-
-					// cout << "\n Distances: " << endl;
-					// cout << "\t dLeft, dRight " << dLeft <<  ", " << dRight << endl;
-
-					// apply Birks effect
-					// 			double stepl = 0.;
-
-					//			if (s == 0){
-					//				stepl = sqrt(pow((Lpos[s+1].x() - Lpos[s].x()),2) + pow((Lpos[s+1].y() - Lpos[s].y()),2) + pow((Lpos[s+1].z() - Lpos[s].z()),2));
-					//			}
-					//			else {
-					//				stepl = sqrt(pow((Lpos[s].x() - Lpos[s-1].x()),2) + pow((Lpos[s].y() - Lpos[s-1].y()),2) + pow((Lpos[s].z() - Lpos[s-1].z()),2));
-					//			}
-
-					double Edep_B = BirksAttenuation(Edep[s], Dx[s], charge[s], birks_constant);
-					Edep_B = Edep[s];
-					etot_g4 = etot_g4 + Edep_B;
-					// cout << "\t Birks Effect: " << " Edep=" << Edep[s] << " StepL=" << stepl
-					//	  << " PID =" << pids[s] << " charge =" << charge[s] << " Edep_B=" << Edep_B << endl;
-
-					//if (light_coll > 1) light_coll = 1.;     // To make sure you don't miraculously get more energy than you started with
-
-					etotL = etotL + Edep_B / 2 * exp(-dLeft / att_length) * light_coll;
-					etotR = etotR + Edep_B / 2 * exp(-dRight / att_length) * light_coll;
-
-					//			  cout << "step: " << s << " etotL, etotR " << etotL << ", " << etotR  << endl;
-
-					timeL = timeL + (times[s] + dLeft / veff) / nsteps;
-					timeR = timeR + (times[s] + dRight / veff) / nsteps;
-
-					if (etotL > 0.) {
-						if (s == 0 || (time_min[0] > (times[s] + dLeft / veff))) time_min[0] = times[s] + dLeft / veff;
-					}
-					//      cout << "min " << time_min[0] << "min " << times[s]+dLeft/veff << endl;
-					if (etotR > 0.) {
-						if (s == 0 || (time_min[1] > (times[s] + dRight / veff))) time_min[1] = times[s] + dRight / veff;
-					}
+				// Distances from left, right for upper/lower (along z)
+				if (channel == 1 || channel == 2) {
+					dLeft = length - Lpos[s].z();
+					dRight = length + Lpos[s].z();
 				}
-				//cout << " etotR " << etotR   <<  " ; etotL" <<  etotL <<endl;
-				peL = G4Poisson(etotL * light_yield * sensor_qe);
-				peR = G4Poisson(etotR * light_yield * sensor_qe);
-				//cout << " per " << peR   <<  " ; pel" <<  peL <<endl;
-				//peL=(etotL*light_yield*sensor_qe);
-				//peR=(etotR*light_yield*sensor_qe);
-				//cout << " per " << peR   <<  " ; pel" <<  peL <<endl;
+				// Distances from top/bottom for side OV (along y)
 
-				double sigmaTL = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peL + 1.));
-				double sigmaTR = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peR + 1.));
-				//sigmaTL=0;
-				//sigmaTR=0;
-				tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;                //time in ps
-				tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;                // time in ps
-				// Digitization for ADC and QDC not used
-				//TDC1=(int) (tL * tdc_conv);
-				//TDC2=(int) (tR * tdc_conv);
-				//if(TDC1<0) TDC1=0;
-				//if(TDC2<0) TDC2=0;
-				//ADC1=(int) (peL*sensor_gain*adc_conv + adc_ped);
-				//ADC2=(int) (peR*sensor_gain*adc_conv + adc_ped);
+				if (channel == 3 || channel == 4) {
+					dLeft = length + Lpos[s].y();
+					dRight = length - Lpos[s].y();
+				}
+				if (channel == 5 || channel == 6)
+				// Distances from center for U/D OV (along y)
 
-				//	  cout << "ADC1: " << ADC1 << " " << peL << " " << sensor_gain << " " << adc_conv << endl;
+						{
+					dLeft = Lpos[s].x();
+					dRight = Lpos[s].y();
+					double dCent = sqrt(dLeft * dLeft + dRight * dRight);
+					dRight = dCent;
 
-				//cout << "energy right: " << ADC2 / (adc_conv*sensor_gain*sensor_qe*light_yield) << " E left: " << ADC1 / (adc_conv*sensor_gain*sensor_qe*light_yield) << endl;
-				//cout << "energy forw: " << ADCF / (adc_conv*sensor_gain*sensor_qe*light_yield) << " E back: " << ADCB / (adc_conv*sensor_gain*sensor_qe*light_yield) << endl;
+				}
 
-				//cout << " Light collection: " << light_coll << endl;
+				// cout << "\n Distances: " << endl;
+				// cout << "\t dLeft, dRight " << dLeft <<  ", " << dRight << endl;
 
-			}
-			// closes (Etot > 0) loop
+				// apply Birks effect
+				// 			double stepl = 0.;
 
-			// ch 1,3               dRight
-			// ch 2,4               dLeft
-			// ch 7,8,9,10,11,12    dRight
-			// ch 5,6               dRight
-			// ignore the other side
+				//			if (s == 0){
+				//				stepl = sqrt(pow((Lpos[s+1].x() - Lpos[s].x()),2) + pow((Lpos[s+1].y() - Lpos[s].y()),2) + pow((Lpos[s+1].z() - Lpos[s].z()),2));
+				//			}
+				//			else {
+				//				stepl = sqrt(pow((Lpos[s].x() - Lpos[s-1].x()),2) + pow((Lpos[s].y() - Lpos[s-1].y()),2) + pow((Lpos[s].z() - Lpos[s-1].z()),2));
+				//			}
 
-			if (channel == 1 || channel == 2) {
-				if (sector == 0) {
-					ADC1 = peR;
-					TDC1 = tR;
-				} else if (sector == 1) {
-					ADC1 = peL;
-					TDC1 = tL;
+				double Edep_B = BirksAttenuation(Edep[s], Dx[s], charge[s], birks_constant);
+				Edep_B = Edep[s];
+				etot_g4 = etot_g4 + Edep_B;
+				// cout << "\t Birks Effect: " << " Edep=" << Edep[s] << " StepL=" << stepl
+				//	  << " PID =" << pids[s] << " charge =" << charge[s] << " Edep_B=" << Edep_B << endl;
+
+				//if (light_coll > 1) light_coll = 1.;     // To make sure you don't miraculously get more energy than you started with
+
+				etotL = etotL + Edep_B / 2 * exp(-dLeft / att_length) * light_coll;
+				etotR = etotR + Edep_B / 2 * exp(-dRight / att_length) * light_coll;
+
+				//			  cout << "step: " << s << " etotL, etotR " << etotL << ", " << etotR  << endl;
+
+				timeL = timeL + (times[s] + dLeft / veff) / nsteps;
+				timeR = timeR + (times[s] + dRight / veff) / nsteps;
+
+				if (etotL > 0.) {
+					if (s == 0 || (time_min[0] > (times[s] + dLeft / veff))) time_min[0] = times[s] + dLeft / veff;
+				}
+				//      cout << "min " << time_min[0] << "min " << times[s]+dLeft/veff << endl;
+				if (etotR > 0.) {
+					if (s == 0 || (time_min[1] > (times[s] + dRight / veff))) time_min[1] = times[s] + dRight / veff;
 				}
 			}
-			if (channel == 3 || channel == 4) {
-				ADC1 = peR;
-				TDC1 = tR;
-			}
-			if (channel == 5 || channel == 6) {
-				ADC1 = peR;
-				TDC1 = tR;
-			}
+			//cout << " etotR " << etotR   <<  " ; etotL" <<  etotL <<endl;
+			peL = G4Poisson(etotL * light_yield * sensor_qe);
+			peR = G4Poisson(etotR * light_yield * sensor_qe);
+			//cout << " per " << peR   <<  " ; pel" <<  peL <<endl;
+			//peL=(etotL*light_yield*sensor_qe);
+			//peR=(etotR*light_yield*sensor_qe);
+			//cout << " per " << peR   <<  " ; pel" <<  peL <<endl;
 
-			// cout << " ADC1: " << ADC1    <<  " ; TDC1: " <<  TDC1  << " ;  ADC2: "<< etot_g4*1000. << endl;
-			if (verbosity > 4) {
-				cout << log_msg << " veto: " << veto_id << ", channel: " << channel << ", sector: " << sector;
-				cout << log_msg << " Etot=" << Etot / MeV << endl;
-				cout << log_msg << " TDC1=" << TDC1 << " TDC2=" << TDC2 << " ADC1=" << ADC1 << " ADC2=" << ADC2 << endl;
-			}
+			double sigmaTL = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peL + 1.));
+			double sigmaTR = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peR + 1.));
+			//sigmaTL=0;
+			//sigmaTR=0;
+			tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;                //time in ps
+			tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;                // time in ps
+			// Digitization for ADC and QDC not used
+			//TDC1=(int) (tL * tdc_conv);
+			//TDC2=(int) (tR * tdc_conv);
+			//if(TDC1<0) TDC1=0;
+			//if(TDC2<0) TDC2=0;
+			//ADC1=(int) (peL*sensor_gain*adc_conv + adc_ped);
+			//ADC2=(int) (peR*sensor_gain*adc_conv + adc_ped);
+
+			//	  cout << "ADC1: " << ADC1 << " " << peL << " " << sensor_gain << " " << adc_conv << endl;
+
+			//cout << "energy right: " << ADC2 / (adc_conv*sensor_gain*sensor_qe*light_yield) << " E left: " << ADC1 / (adc_conv*sensor_gain*sensor_qe*light_yield) << endl;
+			//cout << "energy forw: " << ADCF / (adc_conv*sensor_gain*sensor_qe*light_yield) << " E back: " << ADCB / (adc_conv*sensor_gain*sensor_qe*light_yield) << endl;
+
+			//cout << " Light collection: " << light_coll << endl;
 
 		}
-	} else if (veto_id == 4)
-	// proposal IV
-			{
+		// closes (Etot > 0) loop
+
+		// ch 1,3               dRight
+		// ch 2,4               dLeft
+		// ch 7,8,9,10,11,12    dRight
+		// ch 5,6               dRight
+		// ignore the other side
+
+		if (channel == 1 || channel == 2) {
+			if (sector == 0) {
+				ADC1 = peR;
+				TDC1 = tR;
+			} else if (sector == 1) {
+				ADC1 = peL;
+				TDC1 = tL;
+			}
+		}
+		if (channel == 3 || channel == 4) {
+			ADC1 = peR;
+			TDC1 = tR;
+		}
+		if (channel == 5 || channel == 6) {
+			ADC1 = peR;
+			TDC1 = tR;
+		}
+
+		// cout << " ADC1: " << ADC1    <<  " ; TDC1: " <<  TDC1  << " ;  ADC2: "<< etot_g4*1000. << endl;
+		if (verbosity > 4) {
+			cout << log_msg << " veto: " << veto_id << ", channel: " << channel << ", sector: " << sector;
+			cout << log_msg << " Etot=" << Etot / MeV << endl;
+			cout << log_msg << " TDC1=" << TDC1 << " TDC2=" << TDC2 << " ADC1=" << ADC1 << " ADC2=" << ADC2 << endl;
+		}
+
+	} else if (veto_id == 4) {
+		// proposal IV
+
 		double veff = 13 * cm / ns;            // TO BE CHECKED
 		// scintillator sizes
 		double sx = aHit->GetDetector().dimensions[0];
@@ -368,11 +494,11 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	// 1 WLS readout (L/R)
 	// 2 not existing anymore
 	// 3 bottom
-	if (veto_id == 2 && channel != 1 && channel != 2 && channel != 5 && channel != 6) {
+	else if (veto_id == 2 && channel != 1 && channel != 2 && channel != 5 && channel != 6) {
 		//double optical_coupling[13]= {0., 0.94,0.57, 0.35, 0.7, 0.094, 0.177, 0.52, 0.75, 0.52, 0.52, 0.38, 1.0 };
-		double optical_coupling[15] = { 0., 0., 0., 0.35, 0.7, 0., 0., 0.94, 0.57, 0.52, 0.75, 0.52, 0.52, 0.38, 1.0 };
+		double optical_coupling[15] = {0., 0., 0., 0.35, 0.7, 0., 0., 0.94, 0.57, 0.52, 0.75, 0.52, 0.52, 0.38, 1.0};
 		for (int s = 0; s < 15; s++)
-			optical_coupling[s] = optical_coupling[s] * 0.68;
+		optical_coupling[s] = optical_coupling[s] * 0.68;
 		light_yield = 9200 / MeV;
 		veff = 13 * cm / ns;
 		sensor_effective_area = 0.9;
@@ -386,7 +512,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			double s1 = aHit->GetDetector().dimensions[0];
 			double s2 = aHit->GetDetector().dimensions[1];
 			paddle_surface = 2 * s1 * 2 * s2;
-			sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
+			sensor_surface = pow(2.5 * cm, 2) * pi;// 2" pmt R-> (2*2.5/2 TBC)
 			att_length = 350 * cm;
 			light_guide_att = 1.0;
 			// cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
@@ -397,7 +523,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			length = aHit->GetDetector().dimensions[1];
 			double s1 = aHit->GetDetector().dimensions[0];
 			double s2 = aHit->GetDetector().dimensions[2];
-			sensor_surface = pow(2.5 * cm, 2) * pi; // 2" pmt R-> (2*2.5/2 TBC)
+			sensor_surface = pow(2.5 * cm, 2) * pi;// 2" pmt R-> (2*2.5/2 TBC)
 			paddle_surface = 2 * s1 * 2 * s2;
 			att_length = 350 * cm;
 			light_guide_att = 1.0;
@@ -406,7 +532,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
 		light_coll = sensor_surface / paddle_surface;
 		if (sensor_surface > paddle_surface) light_coll = 1.;   // no more than the PMT size
-		light_coll = optical_coupling[channel] * light_coll * sensor_effective_area * light_guide_att;             // Including the coupling efficiency and the pc effective area
+		light_coll = optical_coupling[channel] * light_coll * sensor_effective_area * light_guide_att;// Including the coupling efficiency and the pc effective area
 		//cout << " light collo " << light_coll     <<endl;
 
 		// Get info about detector material to eveluate Birks effect
@@ -414,7 +540,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		//	cout << " Birks constant is: " << birks_constant << endl;
 		//	cout << aHit->GetDetector().GetLogical()->GetMaterial()->GetName() << endl;
 
-		double time_min[4] = { 0, 0, 0, 0 };
+		double time_min[4] = {0, 0, 0, 0};
 
 		vector<G4ThreeVector> Lpos = aHit->GetLPos();
 		vector<G4double> Edep = aHit->GetEdep();
@@ -427,7 +553,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		double Etot = 0;
 
 		for (unsigned int s = 0; s < nsteps; s++)
-			Etot = Etot + Edep[s];
+		Etot = Etot + Edep[s];
 
 		if (Etot > 0) {
 			for (unsigned int s = 0; s < nsteps; s++) {
@@ -495,8 +621,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			double sigmaTR = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peR + 1.));
 			//sigmaTL=0;
 			//sigmaTR=0;
-			tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;		//time in ps
-			tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;		// time in ps
+			tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;// time in ps
 			// Digitization for ADC and QDC not used
 			//TDC1=(int) (tL * tdc_conv);
 			//TDC2=(int) (tR * tdc_conv);
@@ -545,7 +671,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	} // end of OV
 
 	// Outer VETO OV WLS readout
-	if (veto_id == 2 && (channel == 1 || channel == 2 || channel == 5 || channel == 6)) {
+	else if (veto_id == 2 && (channel == 1 || channel == 2 || channel == 5 || channel == 6)) {
 		double veff = 13 * cm / ns; // TO BE CHECKED
 		// scintillator sizes
 		//        double sx=aHit->GetDetector().dimensions[0];
@@ -570,7 +696,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		double dRight = -10000.;
 
 		for (unsigned int s = 0; s < nsteps; s++)
-			Etot = Etot + Edep[s];
+		Etot = Etot + Edep[s];
 		if (Etot > 0) {
 			for (unsigned int s = 0; s < nsteps; s++) {
 				double Edep_B = Edep[s];
@@ -597,8 +723,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			double *pe_wls;        // response for a mip (2..05 MeV energy released in 1cm thick)
 			pe_wls = OVresponse(channel, X_hit_ave, Y_hit_ave, Z_hit_ave);
 
-			ADC1 = G4Poisson(pe_wls[0] * etot_g4 / 5.0); // Scaling for more/less energy release 2.5cm = 5 MeV/MIPs )
-			ADC2 = G4Poisson(pe_wls[1] * etot_g4 / 5.0); // Scaling for more/less energy release)
+			ADC1 = G4Poisson(pe_wls[0] * etot_g4 / 5.0);// Scaling for more/less energy release 2.5cm = 5 MeV/MIPs )
+			ADC2 = G4Poisson(pe_wls[1] * etot_g4 / 5.0);// Scaling for more/less energy release)
 			//ADC3=G4Poisson(pe_wls[2]*etot_g4/5.0) ; // Scaling for more/less energy release)
 			//ADC4=G4Poisson(pe_wls[3]*etot_g4/5.0) ; // Scaling for more/less energy release)
 			//adding a gaussian spread  TBD
@@ -613,8 +739,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
 			double sigmaTL = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peL + 1.));
 			sigmaTL = 0.;
-			TDC1 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
-			TDC2 = (timeR + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
+			TDC1 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			TDC2 = (timeR + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
 			TDC3 = 0.;
 			TDC4 = 0.;
 
@@ -633,20 +759,18 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
 	}            // end of OV WLS readout
 
-// INNER VETO or CAL_PADs or BDX-Hodo or BDX-MINI
-	if (veto_id == 1 || veto_id == 3 || veto_id == 6 || veto_id == 7 || veto_id == 8) {
+	// INNER VETO or CAL_PADs or BDX-Hodo or BDX-MINI
+	else if (veto_id == 1 || veto_id == 3 || veto_id == 6 || veto_id == 7 || veto_id == 8) {
 		int chan = channel;
-		if (veto_id == 3)            //Cal_pad
-				{
-			if (channel == 1) chan = 301;            //top
+		if (veto_id == 3) {            //Cal_pad
+			if (channel == 1) chan = 301;//top
 			else if (channel == 2) chan = 302;
 		}            //bottom
-		else if (veto_id == 6) chan = 600 + channel;            //bdx-hodo
+		else if (veto_id == 6) chan = 600 + channel;//bdx-hodo
+		else if (veto_id == 7) chan = 700 + channel;//bdx-mini Outer Veto
+		else if (veto_id == 8) chan = 800 + channel;//bdx-mini Inner Veto
 
-		else if (veto_id == 7) chan = 700 + channel;            //bdx-mini Outer Veto
-		else if (veto_id == 8) chan = 800 + channel;            //bdx-mini Inner Veto
-
-		double veff = 13 * cm / ns;            // TO BE CHECKED
+		double veff = 13 * cm / ns;// TO BE CHECKED
 		// scintillator sizes
 		double sx = aHit->GetDetector().dimensions[0];
 		double sy = aHit->GetDetector().dimensions[1];
@@ -713,15 +837,15 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			timeR = dRight / veff + T_hit_ave;
 			//     cout << "AVE  X " << X_hit_ave << " " << "Y " << Y_hit_ave << " " << "Z " << Z_hit_ave <<" " << "Phi " << Phi_hit_ave << " " << "dLeft " << dLeft <<" "<< "T " <<T_hit_ave << " Etot " <<etot_g4 << " " << endl;
 			//     cout<< " ---END ----"<< endl;
-			double *pe_sipm;       // response for a mip (2..05 MeV energy released in 1cm thick)
+			double *pe_sipm;// response for a mip (2.05 MeV energy released in 1cm thick)
 			pe_sipm = IVresponse(chan, X_hit_ave, Y_hit_ave, Z_hit_ave, sx, sy, sz);
 
 			//cout << "sx " << sx << " " << "sy " << sy << " " << "sz " << sz << endl;
 
-			ADC1 = G4Poisson(pe_sipm[0] * etot_g4 / 2.05); // Scaling for more/less ener54     gy release)
-			ADC2 = G4Poisson(pe_sipm[1] * etot_g4 / 2.05); // Scaling for more/less energy release)
-			ADC3 = G4Poisson(pe_sipm[2] * etot_g4 / 2.05); // Scaling for more/less energy release)
-			ADC4 = G4Poisson(pe_sipm[3] * etot_g4 / 2.05); // Scaling for more/less energy release)
+			ADC1 = G4Poisson(pe_sipm[0] * etot_g4 / 2.05);// Scaling for more/less ener54     gy release)
+			ADC2 = G4Poisson(pe_sipm[1] * etot_g4 / 2.05);// Scaling for more/less energy release)
+			ADC3 = G4Poisson(pe_sipm[2] * etot_g4 / 2.05);// Scaling for more/less energy release)
+			ADC4 = G4Poisson(pe_sipm[3] * etot_g4 / 2.05);// Scaling for more/less energy release)
 			//adding a gaussian spread accoring to Luca's tabel
 			ADC1 = (ADC1 + G4RandGauss::shoot(0.,13.));
 			ADC2 = (ADC2 + G4RandGauss::shoot(0.,13.));
@@ -735,17 +859,17 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			double sigmaTL = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peL + 1.));
 
 			sigmaTL = 0.;
-			TDC1 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
-			TDC2 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
-			TDC3 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
-			TDC4 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
+			TDC1 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			TDC2 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			TDC3 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			TDC4 = (timeL + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
 
 			// Different procedure for BDX-Hodo: using directly the extracted pe from ps_sipm
 			if (chan >= 600 & chan < 700) {
 				//double MPV[14]={0.,   205.3, 155.6, 179.4, 177.4, 198.8, 184.9, 208.5, 207.1, 226.9, 213.1, 227.4, 164.7, 208.1 };
-				double MPV[14] = { 0., 205.3, 155.6, 179.4, 177.4, 198.8, 184.9, 208.5, 207.1, 226.9, 213.1, 227.4, 164.7, 208.1 };
-				double S_Land[14] = { 0., 9.7, 10.9, 11.5, 5.0, 10.2, 9.3, 4.5, 7.7, 4.3, 4.6, 5.2, 7.1, 3.8 };
-				double S_Gaus[14] = { 0., 19.3, 16.1, 20.2, 37.0, 21.1, 17.8, 27.5, 19.8, 21.5, 24.6, 15.2, 23.0, 24.5 };
+				double MPV[14] = {0., 205.3, 155.6, 179.4, 177.4, 198.8, 184.9, 208.5, 207.1, 226.9, 213.1, 227.4, 164.7, 208.1};
+				double S_Land[14] = {0., 9.7, 10.9, 11.5, 5.0, 10.2, 9.3, 4.5, 7.7, 4.3, 4.6, 5.2, 7.1, 3.8};
+				double S_Gaus[14] = {0., 19.3, 16.1, 20.2, 37.0, 21.1, 17.8, 27.5, 19.8, 21.5, 24.6, 15.2, 23.0, 24.5};
 				ADC1 = G4Poisson(1.2 * MPV[channel] * etot_g4 / 2.05); //this is not correct for Ch=12 and 13 being thickness=2cm (and not 1cm)
 				//ADC1=(ADC1+G4RandGauss::shoot(0.,(S_Land[channel]+S_Gaus[channel])));
 				ADC1 = (ADC1 + G4RandGauss::shoot(0.,10.));
@@ -761,69 +885,9 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			//For BDX-MINI cylinder/octagon vetos (chan==701 || chan ==801) sum up lights in the position of the 8 sipms step by step
 			if (chan >= 700 & chan < 900) { //BDX-MINI vetos
 				if (chan == 701 || chan == 801) { //BDX-MINI Cylinder/Octagon
-				//finding time clusters
-					double BdxMiniSipm[8];
-					double TCluster[100]; // assuming less than 100 time clusters in the veto
-					double PhiCluster[100];
-					double PhiHitCluster = 0.;
-					double ETotCluster = 0.;
-					double ECluster[100];
-					unsigned int NHC[100];
-					double XCA;
-					double YCA;
-					for (unsigned int s = 0; s < 100; s++) {
-						TCluster[s] = 0.;
-						ECluster[s] = 0.;
-						PhiCluster[s] = 0.;
-						NHC[s] = 0.;
-					}
-					unsigned int NCluster = 1;
-					double DeltaTCluster = 0.1;
-					unsigned int jj = 0;
-					TCluster[0] = times[0]; // first hit is the first cluster
-					PhiCluster[0] = 360 - (360 - (atan2(Lpos[0].x(), Lpos[0].y()) / acos(-1.) * 180. + 180));
-					ECluster[0] = Edep[0];
-					NHC[0] = 1;
-					XCA = 0.;
-					YCA = 0.;
-					ETotCluster = 0.;
-					for (unsigned int s = 0; s < nsteps; s++) {
-						if (Edep[s] > 0 && abs(times[s] - TCluster[jj]) < DeltaTCluster) ETotCluster = ETotCluster + Edep[s];
-					}
+					//finding time clusters
+					auto ghits=sortBDXMiniVetoHits(aHit);
 
-					for (unsigned int s = 1; s < nsteps; s++) // Iloop over hits
-						if (Edep[s] > 0) {
-							if (abs(times[s] - TCluster[jj]) < DeltaTCluster) {
-								NHC[jj] = NHC[jj] + 1;
-								TCluster[jj] = (TCluster[jj] * NHC[jj] + times[s]) / (NHC[jj] + 1.);
-								//PhiHitCluster=atan2(Lpos[s].x(),Lpos[s].y())/acos(-1.)*180.+180; wrong
-								//PhiCluster[jj]=(PhiCluster[jj]*NHC[jj]+(Edep[s]/ETotCluster)*(360-(360-(atan2(Lpos[s].x(),Lpos[s].y())/acos(-1.)*180.+180))))/(NHC[jj]+1.); wrong
-								ECluster[jj] = ECluster[jj] + Edep[s];
-								XCA = XCA + Lpos[s].x() * Edep[s] / ETotCluster;
-								YCA = YCA + Lpos[s].y() * Edep[s] / ETotCluster;
-								PhiHitCluster = (atan2(Lpos[s].x(), Lpos[s].y()) / acos(-1.) * 180. + 180);
-								PhiCluster[jj] = (atan2(XCA, YCA) / acos(-1.) * 180. + 180);
-							} else {
-								NCluster = NCluster + 1;
-								jj = NCluster - 1;
-								TCluster[jj] = times[s];
-								PhiCluster[jj] = 360 - (360 - (atan2(Lpos[s].x(), Lpos[s].y()) / acos(-1.) * 180. + 180));
-								PhiHitCluster = (atan2(Lpos[s].x(), Lpos[s].y()) / acos(-1.) * 180. + 180);
-								ECluster[jj] = Edep[s];
-								NHC[jj] = 1;
-								XCA = 0.;
-								YCA = 0.;
-								ETotCluster = 0.;
-								for (unsigned int s = 1; s < nsteps; s++) {
-									if (Edep[s] > 0 && abs(times[s] - TCluster[jj]) < DeltaTCluster) ETotCluster = ETotCluster + Edep[s];
-								}
-							}
-							//cout << "ok " << abs(times[s]-TCluster[jj])<< " "<< times[s]<<" "<< TCluster[jj]<<" "<<NHC[jj]<< endl;
-							//cout << "CLUSTER T " <<times[s] << " " << "NCluster "<< jj<< " " << "TCluster " << TCluster[jj] << endl;
-
-							// cout <<"THit "<<times[s]<< " Edep "<<Edep[s]<< " PhiHit "<< PhiHitCluster << "  Phi cluster " << PhiCluster[jj]
-							// << " TCluster " << TCluster[jj] <<  " ETotCluster " << ETotCluster <<" ETot " << ECluster[jj] <<endl;
-						}
 					//  cout <<" "<< endl;
 					double QSipmBdxMini[8];
 					double TSipmBdxMini[8];
@@ -835,60 +899,56 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 					double TrGrv;
 					double *MeV2pe;
 
-					//    double MeV2peIV[8]={200.,200.,200.,200.,200.,200.,200.,200.};
-
-					double MeV2peIV[8] = { 57., 57., 66.6, 52.6, 50., 57.1, 66.6, 50. };
-					double MeV2peOV[8] = { 38.4615, 33.3333, 200, 40, 33.8983, 42.5532, 40, 41.6667 };
+					double MeV2peIV[8] = {57., 57., 66.6, 52.6, 50., 57.1, 66.6, 50.};
+					double MeV2peOV[8] = {38.4615, 33.3333, 200, 40, 33.8983, 42.5532, 40, 41.6667};
 
 					double Qdep;
 					unsigned int NGrv;
 					double PhiLoc;
 					double LightSpeedAng = 15. * 360 / (2 * 3.1415 * 9.);                       // 15.ns/cm * 360 deg /(2pi R_ave_IV_OV=9cm)
-					double SigmaTSipm = 0.;                       // Time spread on sipm on octagon and cylinder
-					double QTThre = 10.;  //Timing is considered only if the j-mo sipm receive a charge larger than QTThre pe
-					for (unsigned int s = 0; s < 8; s++)
+					double SigmaTSipm = 0.;// Time spread on sipm on octagon and cylinder
+					double QTThre = 10.;//Timing is considered only if the j-mo sipm receive a charge larger than QTThre pe
+					for (unsigned int s = 0; s < 8; s++) {
 						QSipmBdxMini[s] = 0.;
-					for (unsigned int s = 0; s < 8; s++)
-						TSipmBdxMini[s] = 1000.;  // Time initializatiom
-					for (unsigned int s = 0; s < NCluster; s++) // looping on found clusters
-							{
+						TSipmBdxMini[s] = 1000.;                       // Time initializatiom
+					}
+
+					//looping on found clusters
+					for (auto ghit:ghits) {
+						double phiCluster=(atan2(ghit.avgLPos.x(),ghit.avgLPos.y()) / acos(-1.) * 180. + 180);
 						//  cout << "CLUSTER  N=" <<s<< endl;
-						for (unsigned int j = 0; j < 8; j++) //looping on 8 sipm
-								{
-							if (chan == 701) {
-								PhiLoc = 360 - abs((j) * 45. - PhiCluster[s] - 22.5); // outer veto sipm staggered by 22.5deg
+						for (unsigned int j = 0; j < 8; j++) {                       //looping on 8 sipm
+							if (chan == 701) {                       // outer veto sipm staggered by 22.5deg
+								PhiLoc = 360 - abs((j) * 45. - phiCluster - 22.5);
 								if (PhiLoc < 0) PhiLoc = 360 + PhiLoc;
 								MeV2pe = MeV2peOV;
 								TrGrv = TrGrvOL;
 								att_l_ang = att_l_ang_OV;
 							}
-							if (chan == 801) {
-								PhiLoc = 360 - abs((j) * 45. - PhiCluster[s]); //inner veto
+							else if (chan == 801) {
+								PhiLoc = 360 - abs((j) * 45. - phiCluster); //inner veto
 								MeV2pe = MeV2peIV;
 								TrGrv = TrGrvIL;
 								att_l_ang = att_l_ang_IV;
 							}
 							NGrv = int(PhiLoc / 45.); // counting grooves
 
-							Qdep = MeV2pe[j] * ECluster[s] * (pow(TrGrv, NGrv) * exp(-PhiLoc / att_l_ang) + pow(TrGrv, (7 - NGrv)) * exp(-abs(360. - PhiLoc) / att_l_ang));
+							Qdep = MeV2pe[j] * ghit.Esum * (pow(TrGrv, NGrv) * exp(-PhiLoc / att_l_ang) + pow(TrGrv, (7 - NGrv)) * exp(-abs(360. - PhiLoc) / att_l_ang));
 							//Qdep=MeV2pe[j]*ECluster[s]*(pow(TrGrv,NGrv)+pow(TrGrv,(7-NGrv)));
-
 							QSipmBdxMini[j] = QSipmBdxMini[j] + Qdep;
 							// Timing
 							double DeltaPhi = abs(PhiLoc);
-							if (Qdep > QTThre) // Timing is considered only if the j-mo sipm receive a charge larger than QTThre pe
-									{
+							if (Qdep > QTThre) { // Timing is considered only if the j-mo sipm receive a charge larger than QTThre pe
 								double TOld;
 								double TNew;
 								if (DeltaPhi > (360 - PhiLoc)) DeltaPhi = abs(360 - PhiLoc);
 								TOld = TSipmBdxMini[j];
-								TNew = TCluster[s] + abs(DeltaPhi / LightSpeedAng);
+								TNew = ghit.avgT + abs(DeltaPhi / LightSpeedAng);
 								if (TNew < TOld && TNew < TSipmBdxMini[j]) TSipmBdxMini[j] = TNew;
 							}
-							//     cout <<chan<<"    T_Cluster =" <<TCluster[s] <<" DeltaPhi ="<< DeltaPhi <<" T_travel ="<<abs(DeltaPhi/LightSpeedAng) <<" " << j << " sipm =" <<TSipmBdxMini[j] <<" PhiCluster ="<< PhiCluster[s]<< endl;
-							//      cout << "CLUSTER T " <<TCluster[s] << " "<< "PHI_LOC " <<PhiLoc << " " << "NGrv " << NGrv <<" " << "Edep " <<ECluster[s] << " " << "Q"<<j+1<<" " <<Qdep << " " <<"NCluster "<< NCluster<< " " << "NHC " << NHC[s] << endl;
 						}
 					}
+
 					for (unsigned int s = 0; s < 8; s++) {
 						QSipmBdxMini[s] = G4Poisson(QSipmBdxMini[s]);
 					}
@@ -906,13 +966,6 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 					ADC7 = QSipmBdxMini[6];
 					ADC8 = QSipmBdxMini[7];
 
-					if ((ADC1 < 0) || (ADC2 < 0) || (ADC3 < 0) || (ADC4 < 0) || (ADC5 < 0) || (ADC6 < 0) || (ADC7 < 0) || (ADC8 < 0)) {
-						cout << "ERROR < 0" << endl;
-						for (unsigned int s = 0; s < NCluster; s++) {
-							cout << s << " " << ECluster[s] << endl;
-						}
-					}
-
 					TDC1 = TSipmBdxMini[0];
 					TDC2 = TSipmBdxMini[1];
 					TDC3 = TSipmBdxMini[2];
@@ -922,24 +975,22 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 					TDC7 = TSipmBdxMini[6];
 					TDC8 = TSipmBdxMini[7];
 				}
-
-				// BDX-MINI vetos (OuterTop (RECON: channel-10), OuterBottom (RECON: channel-9), InnerTop(RECON: channel-10), InnerBottom(RECON: channel-9)) leads
-				double LY[4] = { 83., 76., 112.5, 154.5 };
-				double QSipmLeadsBdxMini = 0.;
-				double TSipmLeadsBdxMini = 0.;
-				unsigned int j = 0;
-				double SigmaTSipmLeads = 0.;		// Time spread on sipm leads
-
 				/*Checked by A.C.: 709->OV TOP, 809->IV TOP, 810->IV BOTTOM, 710->OV BOTTOM*/
-				if (chan == 709 || chan == 710 || chan == 809 || chan == 810) {
-					if (chan == 709) j = 0; //OV-TOP
-					if (chan == 710) j = 1; //OV-BOTTOM
-					if (chan == 809) j = 2; //IV-TOP
-					if (chan == 810) j = 3; //IV-BOTTOM
+				else if (chan == 709 || chan == 710 || chan == 809 || chan == 810) {
+					// BDX-MINI vetos (OuterTop (RECON: channel-10), OuterBottom (RECON: channel-9), InnerTop(RECON: channel-10), InnerBottom(RECON: channel-9)) leads
+					double LY[4] = {83., 76., 112.5, 154.5};
+					double QSipmLeadsBdxMini = 0.;
+					double TSipmLeadsBdxMini = 0.;
+					unsigned int j = 0;
+					double SigmaTSipmLeads = 0.;		// Time spread on sipm leads
+					if (chan == 709) j = 0;//OV-TOP
+					if (chan == 710) j = 1;//OV-BOTTOM
+					if (chan == 809) j = 2;//IV-TOP
+					if (chan == 810) j = 3;//IV-BOTTOM
 
 					QSipmLeadsBdxMini = G4Poisson(LY[j] * etot_g4);
 					double sigmaTL = 0.;
-					TSipmLeadsBdxMini = (T_hit_ave + G4RandGauss::shoot(0.,SigmaTSipmLeads))*1000.;		    //time in ps
+					TSipmLeadsBdxMini = (T_hit_ave + G4RandGauss::shoot(0.,SigmaTSipmLeads))*1000.;//time in ps
 
 					//         cout << "ADC leads " << chan<< " "<< QSipmLeadsBdxMini << " " << "TDC leads " << TSipmLeadsBdxMini <<endl;
 					ADC1 = QSipmLeadsBdxMini;
@@ -950,10 +1001,10 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	}  // end of IV
 
 	//starting paddles
-	if (veto_id == 4) {
-		double optical_coupling[3] = { 0., 1., 0.37 };
+	else if (veto_id == 4) {
+		double optical_coupling[3] = {0., 1., 0.37};
 		for (int s = 0; s < 3; s++)
-			optical_coupling[s] = optical_coupling[s] * 0.34;
+		optical_coupling[s] = optical_coupling[s] * 0.34;
 
 		light_yield = 9200 / MeV;
 		veff = 13 * cm / ns;
@@ -973,8 +1024,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		//cout << " lenght: " << length    <<  " optical-coupled surface: " <<  paddle_surface   <<endl;
 
 		light_coll = sensor_surface / paddle_surface;
-		if (sensor_surface > paddle_surface) light_coll = 1.;   // no more than the PMT size
-		light_coll = optical_coupling[channel] * light_coll * sensor_effective_area * light_guide_att;             // Including the coupling efficiency and the pc effective area
+		if (sensor_surface > paddle_surface) light_coll = 1.;// no more than the PMT size
+		light_coll = optical_coupling[channel] * light_coll * sensor_effective_area * light_guide_att;// Including the coupling efficiency and the pc effective area
 		// cout << " channel,veto: " << channel << " " << veto_id    <<  " optical-couping: " <<  optical_coupling[channel]  <<  " light coll: " <<  light_coll  <<endl;
 		//cout << " light collo " << light_coll     <<endl;
 
@@ -983,7 +1034,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		//	cout << " Birks constant is: " << birks_constant << endl;
 		//	cout << aHit->GetDetector().GetLogical()->GetMaterial()->GetName() << endl;
 
-		double time_min[4] = { 0, 0, 0, 0 };
+		double time_min[4] = {0, 0, 0, 0};
 
 		vector<G4ThreeVector> Lpos = aHit->GetLPos();
 		vector<G4double> Edep = aHit->GetEdep();
@@ -996,7 +1047,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		double Etot = 0;
 
 		for (unsigned int s = 0; s < nsteps; s++)
-			Etot = Etot + Edep[s];
+		Etot = Etot + Edep[s];
 		//for(unsigned int s=0; s<nsteps; s++) cout << "Energy = " << Edep[s]*1000.*1000. << endl;
 
 		if (Etot > 0) {
@@ -1057,8 +1108,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 			double sigmaTR = sqrt(pow(0.2 * nanosecond, 2.) + pow(1. * nanosecond, 2.) / (peR + 1.));
 //            sigmaTL=0;
 //            sigmaTR=0;
-			tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;            //time in ps
-			tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;            // time in ps
+			tL = (time_min[0] + G4RandGauss::shoot(0.,sigmaTL))*1000.;//time in ps
+			tR = (time_min[1] + G4RandGauss::shoot(0.,sigmaTR))*1000.;// time in ps
 			//  cout << " tL " << tL   <<  " ; timeL" <<  timeL <<endl;
 			// Digitization for ADC and QDC not used
 			//TDC1=(int) (tL * tdc_conv);
