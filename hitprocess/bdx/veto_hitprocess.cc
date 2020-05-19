@@ -915,18 +915,26 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
 					//looping on found clusters
 					for (auto ghit:ghits) {
+
 						double phiCluster=(atan2(ghit.avgLPos.x(),ghit.avgLPos.y()) / acos(-1.) * 180. + 180);
+
 						//  cout << "CLUSTER  N=" <<s<< endl;
 						for (unsigned int j = 0; j < 8; j++) {                       //looping on 8 sipm
-							if (chan == 701) {                       // outer veto sipm staggered by 22.5deg
+							if (chan == 701) { //OV                      // outer veto sipm staggered by 22.5deg
 								PhiLoc = 360 - abs((j) * 45. - phiCluster - 22.5);
 								if (PhiLoc < 0) PhiLoc = 360 + PhiLoc;
+
+
 								MeV2pe = MeV2peOV;
 								TrGrv = TrGrvOL;
 								att_l_ang = att_l_ang_OV;
 							}
-							else if (chan == 801) {
-								PhiLoc = 360 - abs((j) * 45. - phiCluster); //inner veto
+							else if (chan == 801) {//IV
+
+								auto PhiSipm = -22.5 + j*45;//A.C added here 22.5 due to the rotation in geometry
+								PhiLoc = fabs(phiCluster - PhiSipm);
+								if (PhiLoc>360) PhiLoc=PhiLoc-360;
+								if (PhiLoc<0) PhiLoc=PhiLoc+360;
 								MeV2pe = MeV2peIV;
 								TrGrv = TrGrvIL;
 								att_l_ang = att_l_ang_IV;
