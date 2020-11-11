@@ -92,7 +92,8 @@ field_sources = Split("""
 	fields/multipoleField.cc 
 	fields/symmetries/dipole.cc
 	fields/symmetries/cylindrical.cc
-	fields/symmetries/phi-segmented.cc""")
+	fields/symmetries/phi-segmented.cc
+	fields/symmetries/cartesian_3d.cc""")
 env.Library(source = field_sources, target = "lib/fields")
 
 
