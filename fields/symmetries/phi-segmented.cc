@@ -84,82 +84,96 @@ void asciiField::loadFieldMap_phiSegmented(gMappedField* map, double verbosity)
 					b3 *= scale;
 
 					// checking map consistency for first coordinate
-					if( (min1  + i1*cell1 - d1)/d1 > 0.001)
-					{
+					if( (min1  + i1*cell1 - d1)/d1 > 0.001) {
 						cout << "   !! Error:  coordinate index wrong. Map point should be " <<  min1  + i1*cell1
 						<< " but it's  " << d1 << " instead." << endl;
 					}
 					// checking map consistency for second coordinate
-					if( (min2  + i2*cell2 - d2)/d2 > 0.001)
-					{
+					if( (min2  + i2*cell2 - d2)/d2 > 0.001) {
 						cout << "   !! Error:  coordinate index wrong. Map point should be " <<  min2  + i2*cell2
 						<< " but it's  " << d2 << " instead." << endl;
 					}
 
 					// checking map consistency for third coordinate
-					if( (min3  + i3*cell3 - d3)/d3 > 0.001)
-					{
+					if( (min3  + i3*cell3 - d3)/d3 > 0.001) {
 						cout << "   !! Error:  coordinate index wrong. Map point should be " <<  min2  + i2*cell2
 						<< " but it's  " << d2 << " instead." << endl;
 					}
 
-					if(verbosity>4 && verbosity != 99)
-						cout << "  Loading Map: coordinates (" << d1 << ", " << d2 << ", " << d3 << ")   values: (" << b1 << ", " << b2 << ", " << b3 << ")." << endl;
 
 					// calculating index
+					// this
 					unsigned t1 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
 					unsigned t2 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
 					unsigned t3 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
 
+
 					// The values are indexed as B1_3D[AZI][TRANSVERSE][LONGI]
 					if(   map->getCoordinateWithSpeed(0).name == "azimuthal"
-						&& map->getCoordinateWithSpeed(1).name == "transverse"
-						&& map->getCoordinateWithSpeed(2).name == "longitudinal" )
-					{
+					   && map->getCoordinateWithSpeed(1).name == "transverse"
+					   && map->getCoordinateWithSpeed(2).name == "longitudinal" ) {
 						map->B1_3D[t1][t2][t3] = b1;
 						map->B2_3D[t1][t2][t3] = b2;
 						map->B3_3D[t1][t2][t3] = b3;
-					}
-					if(   map->getCoordinateWithSpeed(0).name == "azimuthal"
-						&& map->getCoordinateWithSpeed(1).name == "longitudinal"
-						&& map->getCoordinateWithSpeed(2).name == "transverse" )
-					{
+					} else if(   map->getCoordinateWithSpeed(0).name == "azimuthal"
+							  && map->getCoordinateWithSpeed(1).name == "longitudinal"
+							  && map->getCoordinateWithSpeed(2).name == "transverse" ) {
+						t1 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
+						t2 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
+						t3 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
+
 						map->B1_3D[t1][t3][t2] = b1;
 						map->B2_3D[t1][t3][t2] = b2;
 						map->B3_3D[t1][t3][t2] = b3;
-					}
-					if(   map->getCoordinateWithSpeed(0).name == "longitudinal"
-						&& map->getCoordinateWithSpeed(1).name == "azimuthal"
-						&& map->getCoordinateWithSpeed(2).name == "transverse" )
-					{
+					} else if(   map->getCoordinateWithSpeed(0).name == "longitudinal"
+							  && map->getCoordinateWithSpeed(1).name == "azimuthal"
+							  && map->getCoordinateWithSpeed(2).name == "transverse" ) {
+						t1 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
+						t2 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
+						t3 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
+
 						map->B1_3D[t3][t1][t2] = b1;
 						map->B2_3D[t3][t1][t2] = b2;
 						map->B3_3D[t3][t1][t2] = b3;
-					}
-					if(   map->getCoordinateWithSpeed(0).name == "longitudinal"
-						&& map->getCoordinateWithSpeed(1).name == "transverse"
-						&& map->getCoordinateWithSpeed(2).name == "azimuthal" )
-					{
+					} else if(   map->getCoordinateWithSpeed(0).name == "longitudinal"
+							  && map->getCoordinateWithSpeed(1).name == "transverse"
+							  && map->getCoordinateWithSpeed(2).name == "azimuthal" ) {
+						t1 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
+						t2 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
+						t3 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
+
 						map->B1_3D[t3][t2][t1] = b1;
 						map->B2_3D[t3][t2][t1] = b2;
 						map->B3_3D[t3][t2][t1] = b3;
-					}
-					if(   map->getCoordinateWithSpeed(0).name == "transverse"
-						&& map->getCoordinateWithSpeed(1).name == "longitudinal"
-						&& map->getCoordinateWithSpeed(2).name == "azimuthal" )
-					{
+					} else if(   map->getCoordinateWithSpeed(0).name == "transverse"
+							  && map->getCoordinateWithSpeed(1).name == "longitudinal"
+							  && map->getCoordinateWithSpeed(2).name == "azimuthal" ) {
+						t1 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
+						t2 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
+						t3 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
+
 						map->B1_3D[t2][t3][t1] = b1;
 						map->B2_3D[t2][t3][t1] = b2;
 						map->B3_3D[t2][t3][t1] = b3;
-					}
-					if(   map->getCoordinateWithSpeed(0).name == "transverse"
-						&& map->getCoordinateWithSpeed(1).name == "azimuthal"
-						&& map->getCoordinateWithSpeed(2).name == "longitudinal" )
-					{
+					} else if(   map->getCoordinateWithSpeed(0).name == "transverse"
+							  && map->getCoordinateWithSpeed(1).name == "azimuthal"
+							  && map->getCoordinateWithSpeed(2).name == "longitudinal" ) {
+						t1 = (unsigned) floor( ( d2 - min2 + cell2/2 ) / ( cell2 ) ) ;
+						t2 = (unsigned) floor( ( d1 - min1 + cell1/2 ) / ( cell1 ) ) ;
+						t3 = (unsigned) floor( ( d3 - min3 + cell3/2 ) / ( cell3 ) ) ;
+						
 						map->B1_3D[t2][t1][t3] = b1;
 						map->B2_3D[t2][t1][t3] = b2;
 						map->B3_3D[t2][t1][t3] = b3;
 					}
+
+					if(verbosity>4 && verbosity != 99) {
+						cout << "  Loading Map: coordinates (" << d1 << ", " << d2 << ", " << d3 << ")   values: (" << b1 << ", " << b2 << ", " << b3 << ")";
+						cout << ",  indexes (t1, t2, t3) = ("  << t1 << ", " << t2 << ", " << t3 << ") " ;
+						cout << ",  array sizes = ("  << np_1 << ", " << np_2 << ", " << np_3 << ") " << endl;
+					}
+
+
 				}
 			}
 		}
@@ -244,8 +258,7 @@ void gMappedField::GetFieldValue_phiSegmented( const double x[3], double *Bfield
 
 
 	// no interpolation
-	if(interpolation == "none")
-	{
+	if(interpolation == "none") {
 		// checking if the point is closer to the top of the cell
 		if( fabs( startMap[0] + aI*cellSize[0] - aaLC) > fabs( startMap[0] + (aI+1)*cellSize[0] - aaLC)  ) aI++;
 		if( fabs( startMap[1] + tI*cellSize[1] - tC)   > fabs( startMap[1] + (tI+1)*cellSize[1] - tC)    ) tI++;
@@ -257,8 +270,7 @@ void gMappedField::GetFieldValue_phiSegmented( const double x[3], double *Bfield
 		mfield[2] = B3_3D[aI][tI][lI];
 	}
 
-	else if (interpolation == "linear")
-	{
+	else if (interpolation == "linear") {
 		// relative positions within cell
 		double xaz = (aaLC - (startMap[0] + aI*cellSize[0])) / cellSize[0];
 		double xtr = (tC   - (startMap[1] + tI*cellSize[1])) / cellSize[1];
@@ -309,9 +321,7 @@ void gMappedField::GetFieldValue_phiSegmented( const double x[3], double *Bfield
 
 		// finally interpolate along longitudinal
 		mfield[2] = b30 * (1 - xlr) + b31 * xlr;
-	}
-	else
-	{
+	} else {
 		cout << "  !! Unkown field interpolation method >" << interpolation << "<" << endl;
 		return;
 	}
@@ -321,15 +331,14 @@ void gMappedField::GetFieldValue_phiSegmented( const double x[3], double *Bfield
 	Bfield[1] =  sign*mfield[0] * sin(dphi/rad) + mfield[1] * cos(dphi/rad);
 	Bfield[2] =  sign*mfield[2];
 
-	if(verbosity>3 && FIRST_ONLY != 99)
-	{
+	if(verbosity>3 && FIRST_ONLY != 99) {
 
-		cout << "  > Track position in magnetic field: "
-		<< "("  << (x[0] + mapOrigin[0])/cm << ", "
-		<< (x[1] + mapOrigin[1])/cm << ", "
-		<< (x[2] + mapOrigin[2])/cm << ") cm,  " << endl;
+		cout << "  > Track position in magnetic field map, with displacement and rotations (x,y,z)/cm: "
+		<< "("  << x[0]/cm << ", "
+		<< x[1]/cm << ", "
+		<< x[2]/cm << ") cm,  " << endl;
 
-		cout << "  > Track position in magnetic field (phi, r, z): "
+		cout << "  > Track position in magnetic field, with displacement and rotations (phi/deg, r/cm, z/cm): "
 		<< "("  << aC/deg << " deg, "
 		<< tC/cm  << " cm, "
 		<< lC/cm << " cm)  " << endl;
@@ -344,12 +353,12 @@ void gMappedField::GetFieldValue_phiSegmented( const double x[3], double *Bfield
 		<< tI << ", "
 		<< lI << ")  " << endl;
 
-		cout << "  > Field Values (local) (Bx, By, Bz) "
+		cout << "  > Field Values (local coordinates) (Bx, By, Bz)/tesla "
 		<< "("  << mfield[0]/tesla << ", "
 		<< mfield[1]/tesla << ", "
 		<< mfield[2]/tesla << ") tesla " << endl;
 
-		cout << "  > Field Values (absolute) (Bx, By, Bz) "
+		cout << "  > Field Values (lab coordinates) (Bx, By, Bz)/tesla "
 		<< "("  << Bfield[0]/tesla << ", "
 		<< Bfield[1]/tesla << ", "
 		<< Bfield[2]/tesla << ") tesla " << endl;

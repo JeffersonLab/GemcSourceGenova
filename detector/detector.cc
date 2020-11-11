@@ -409,7 +409,7 @@ int detector::create_solid(goptions gemcOpt, map<string, detector> *Map)
 							pPhi,     ///< pPhi
 							pDy1,     ///< Half y length at -pDz
 							pDx1,     ///< Half x length at -pDz, y=-pDy1
-							pDx2,     ///< Half x length at -pDz, y=+pDy
+							pDx2,     ///< Half x length at -pDz, yPG=+pDy
 							pAlp1,    ///< Angle with respect to the y axis from the centre of the side (lower endcap)
 							pDy2,     ///< Half y length at +pDz
 							pDx3,     ///< Half x length at +pDz, y=-pDy2
@@ -522,15 +522,20 @@ int detector::create_solid(goptions gemcOpt, map<string, detector> *Map)
 			<< "... should be a G4Polyhedra. Exiting" << endl << endl;
 			exit(0);
 		}
+
+
 		double* zPlane = new double[zplanes];
 		double* rInner = new double[zplanes];
 		double* rOuter = new double[zplanes];
 		
 		for(int zpl=0; zpl<zplanes; zpl++)
 		{
-			rInner[zpl] = dimensions[4 + 0*zplanes + zpl] ;
-			rOuter[zpl] = dimensions[4 + 1*zplanes + zpl] ;
-			zPlane[zpl] = dimensions[4 + 2*zplanes + zpl] ;
+
+			rInner[zpl] = dimensions[4 + 3*zpl] ;
+			rOuter[zpl] = dimensions[4 + 3*zpl+1] ;
+			zPlane[zpl] = dimensions[4 + 3*zpl+2] ;
+
+
 		}
 		SolidV = new G4Polyhedra(name,           ///< name
 								 dimensions[0],  ///< Initial Phi starting angle

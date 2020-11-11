@@ -81,10 +81,18 @@ MPrimaryGeneratorAction::MPrimaryGeneratorAction(goptions *opts) {
 		if (cosmics != "no") {
 
 			vector<string> cvalues = get_info(gemcOpt->optMap["COSMICAREA"].args, string(",\""));
-			if (cvalues.size() < 4) cout << "  !!!  Warning:  COSMICAREA flag not set correctly. It should be 4 numbers: x,y,z and R, with optional surface type (sph || sphere || cyl, default sph)" << endl;
+			if (cvalues.size() < 4) {
+				cout << "  !!!  Warning:  COSMICAREA flag not set correctly. It should be 4 numbers: x,y,z and R, with optional surface type (sph || sphere || cyl, default sph)" << endl;
+				cout << "ANother optional parameter, number 6, is the distance of the back-projection in case of the sphere. It can be left blank, to use a default of 0.8*hallRadius"<<endl;
+			}
 			cosmicTarget = G4ThreeVector(get_number(cvalues[0]), get_number(cvalues[1]), get_number(cvalues[2]));
 			cosmicRadius = get_number(cvalues[3]);
-			if (cvalues.size() == 5) {
+			cosmicRadiusBackProj = -1;
+
+			if (cvalues.size() == 6) {
+				cosmicGeo = cvalues[4];
+				cosmicRadiusBackProj = get_number(cvalues[5]);
+			} else if (cvalues.size() == 5) {
 				cosmicGeo = cvalues[4];
 			} else {
 				cosmicGeo = "sph";
@@ -244,9 +252,9 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
 				double cosmicProbMax = cosmicNeutBeam(0., cminp / GeV);
 				double cosmicProbMin = cosmicNeutBeam(pi / 2., cmaxp / GeV);
-				double cosmicProb = G4UniformRand() * (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
+				double cosmicProb = G4UniformRand()* (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
 				thisMom = cminp + (cmaxp - cminp) * G4UniformRand(); // momentum in MeV/c
-				thisthe = pi * G4UniformRand() / 2.0; // [0,pi/2] zenith angle
+				thisthe = pi * G4UniformRand()/ 2.0; // [0,pi/2] zenith angle
 				//cout<< thisMom<< " before"<< " "<< cosmicProb <<endl;
 				double cosmic = cosmicNeutBeam(thisthe, thisMom / GeV);
 				//cout<< thisMom<< "after "<< " "<< cosmicProb <<endl;
@@ -257,7 +265,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 					thisMom = 0;
 					Nextr = Nextr + 1;
 					thisMom = cminp + (cmaxp - cminp) * G4UniformRand();
-					thisthe = pi * G4UniformRand() / 2.0;
+					thisthe = pi * G4UniformRand()/ 2.0;
 					cosmic = cosmicNeutBeam(thisthe, thisMom / GeV);
 				}
 				//cout<< thisMom<< " "<< cosmic <<" "<< cosmicProb <<endl;
@@ -288,14 +296,14 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
 				double cosmicProbMax = cosmicMuBeam(1., KinEmin);		      //max prob for theta vertical and low momentum
 				double cosmicProbMin = cosmicMuBeam(0., KinEmax);		      //min prob for theta horizontal and high momentum
-				double cosmicProb = G4UniformRand() * (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
+				double cosmicProb = G4UniformRand()* (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
 
 				double thiscthe;
 
 				thiscthe = G4UniformRand();		      //ctheta uniform between 0 and 1
 				thisthe = acos(thiscthe);
 
-				thisKinE = (KinEmax - KinEmin) * G4UniformRand() + KinEmin;
+				thisKinE = (KinEmax - KinEmin) * G4UniformRand()+ KinEmin;
 				thisMom = sqrt((thisKinE + 0.104) * (thisKinE + 0.104) - 0.104 * 0.104);
 
 				double cosmic = cosmicMuBeam(thiscthe, thisKinE);
@@ -305,14 +313,14 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 					thisMom = 0;
 					Nextr = Nextr + 1;
 
-					thisKinE = (KinEmax - KinEmin) * G4UniformRand() + KinEmin;
+					thisKinE = (KinEmax - KinEmin) * G4UniformRand()+ KinEmin;
 					thisMom = sqrt((thisKinE + 0.104) * (thisKinE + 0.104) - 0.104 * 0.104);
 
 					thiscthe = G4UniformRand();
 					thisthe = acos(thiscthe);
 
 					cosmic = cosmicMuBeam(thiscthe, thisKinE);
-					cosmicProb = G4UniformRand() * (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
+					cosmicProb = G4UniformRand()* (cosmicProbMax - cosmicProbMin) + cosmicProbMin;
 				}
 				if (Nextr > 999999) cout << " !!!! LOOPING IN MU EXTRACTION !!! exceeded " << Nextr << " extractions !!!" << Nextr << endl;
 				thisMom = thisMom * GeV; //put the proper unit now for later use
@@ -362,10 +370,16 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 			} else if (cosmicGeo == "rec") {
 				if (abs(Xplane) < cosmicRadius && abs(Zplane) < 3 * cosmicRadius) Nsup = Nsup + 1;
 			}
-
-			double pvx = cosmicVX + cosmicTarget.x() + -0.8 * HallRadius * sin(thisthe) * cos(thisPhi);
-			double pvy = cosmicVY + cosmicTarget.y() + 0.8 * HallRadius * cos(thisthe);
-			double pvz = cosmicVZ + cosmicTarget.z() + 0.8 * HallRadius * sin(thisthe) * sin(thisPhi);
+			double pvx, pvy, pvz;
+			if (cosmicRadiusBackProj > 0) {
+				pvx = cosmicVX + cosmicTarget.x() - cosmicRadiusBackProj * sin(thisthe) * cos(thisPhi);
+				pvy = cosmicVY + cosmicTarget.y() + cosmicRadiusBackProj * cos(thisthe);
+				pvz = cosmicVZ + cosmicTarget.z() + cosmicRadiusBackProj * sin(thisthe) * sin(thisPhi);
+			} else {
+				pvx = cosmicVX + cosmicTarget.x() + -0.8 * HallRadius * sin(thisthe) * cos(thisPhi);
+				pvy = cosmicVY + cosmicTarget.y() + 0.8 * HallRadius * cos(thisthe);
+				pvz = cosmicVZ + cosmicTarget.z() + 0.8 * HallRadius * sin(thisthe) * sin(thisPhi);
+			}
 
 			// checking the generation vertex in the original position
 			//double pvx = cosmicTarget.x() + cosmicVX ;
@@ -406,7 +420,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 			} else {              //muons
 				// choosing charge of the muons
 				string muonType = "mu+";
-				if (G4UniformRand() <= 0.5) muonType = "mu-";
+				if (G4UniformRand()<= 0.5) muonType = "mu-";
 
 				Particle = particleTable->FindParticle(muonType);
 			}
@@ -453,7 +467,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 				Nsup++;
 				Nextr++;
 				//phiPos is the phi angle in the scoring plane. This is randomly distributed.
-				phiPos = TMath::Pi() * (2 * G4UniformRand() - 1); //between -PI and PI
+				phiPos = TMath::Pi() * (2 * G4UniformRand()- 1); //between -PI and PI
 
 				//Get Ctheta, E, R
 				JLabFluxROOThisto->GetRandom3(Ctheta, R, E);
@@ -469,7 +483,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 				dir = pos - vertex;
 
 				//CTheta is measured wrt dir!!!
-				phiMom = TMath::Pi() * (2 * G4UniformRand() - 1); //between -PI and PI
+				phiMom = TMath::Pi() * (2 * G4UniformRand()- 1); //between -PI and PI
 				mom.SetXYZ(sqrt(1 - Ctheta * Ctheta), 0, Ctheta);  //in the frame where dir is the z-axis, this is a vector that forms an angle theta with dir.
 				mom.RotateZ(phiMom); //random rotation around dir==z'
 
@@ -497,7 +511,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
 			// choosing charge of the muons
 			string muonType = "mu+";
-			if (G4UniformRand() <= 0.5) muonType = "mu-";
+			if (G4UniformRand()<= 0.5) muonType = "mu-";
 			Particle = particleTable->FindParticle(muonType);
 
 			G4ThreeVector beam_dir(mom.X(), mom.Y(), mom.Z());
@@ -552,11 +566,11 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 			G4ThreeVector beam_dir;
 
 			// 4-momenta
-			double Mom = mom / MeV + (2.0 * G4UniformRand() - 1.0) * dmom / MeV;
-			double Theta = acos(G4UniformRand() * (cos(theta / rad - dtheta / rad) - cos(theta / rad + dtheta / rad)) + cos(theta / rad + dtheta / rad)) / rad;
-			if (primaryFlat) Theta = theta / rad + (2.0 * G4UniformRand() - 1.0) * dtheta / rad;
+			double Mom = mom / MeV + (2.0 * G4UniformRand()- 1.0) * dmom / MeV;
+			double Theta = acos(G4UniformRand()* (cos(theta / rad - dtheta / rad) - cos(theta / rad + dtheta / rad)) + cos(theta / rad + dtheta / rad)) / rad;
+			if (primaryFlat) Theta = theta / rad + (2.0 * G4UniformRand()- 1.0) * dtheta / rad;
 
-			double Phi = phi / rad + (2.0 * G4UniformRand() - 1.0) * dphi / rad;
+			double Phi = phi / rad + (2.0 * G4UniformRand()- 1.0) * dphi / rad;
 			double mass = Particle->GetPDGMass();
 			double akine = sqrt(Mom * Mom + mass * mass) - mass;
 			if (gemcOpt->optMap["ALIGN_ZAXIS"].args == "no") beam_dir = G4ThreeVector(cos(Phi / rad) * sin(Theta / rad), sin(Phi / rad) * sin(Theta / rad), cos(Theta / rad));
@@ -564,8 +578,8 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 				beam_dir = G4ThreeVector(cos(phi / rad) * sin(theta / rad), sin(phi / rad) * sin(theta / rad), cos(theta / rad));
 				const G4ThreeVector beam_axis(cos(phi / rad) * sin(theta / rad), sin(phi / rad) * sin(theta / rad), cos(theta / rad));
 				const G4ThreeVector rotx1(cos(phi / rad), -sin(phi / rad), 0);
-				beam_dir.rotate((2.0 * G4UniformRand() - 1.0) * dtheta / rad, rotx1);
-				beam_dir.rotate((2.0 * G4UniformRand() - 1.0) * dphi / rad, beam_axis);
+				beam_dir.rotate((2.0 * G4UniformRand()- 1.0) * dtheta / rad, rotx1);
+				beam_dir.rotate((2.0 * G4UniformRand()- 1.0) * dphi / rad, beam_axis);
 			} else {
 				beam_dir = G4ThreeVector(cos(cphi / rad) * sin(ctheta / rad), sin(cphi / rad) * sin(ctheta / rad), cos(ctheta / rad));
 				//		const G4ThreeVector beam_axis(cos(cphi/rad)*sin(ctheta/rad), sin(cphi/rad)*sin(ctheta/rad), cos(ctheta/rad));
@@ -596,7 +610,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
 				double Vx = vx / mm + VR * cos(PHI);
 				double Vy = vy / mm + VR * sin(PHI);
-				double Vz = vz / mm + (2.0 * G4UniformRand() - 1.0) * dvz / mm;
+				double Vz = vz / mm + (2.0 * G4UniformRand()- 1.0) * dvz / mm;
 
 				beam_vrt = G4ThreeVector(Vx, Vy, Vz);
 			} else {
@@ -672,7 +686,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 			}
 			// choosing charge of the muons
 			string muonType = "mu+";
-			if (G4UniformRand() <= 0.5) muonType = "mu-";
+			if (G4UniformRand()<= 0.5) muonType = "mu-";
 			Particle = particleTable->FindParticle(muonType);
 
 			G4ThreeVector beam_dir(cxMu, cyMu, czMu);
@@ -982,7 +996,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 		for (int b = 0; b < NBUNCHES; b++) {
 			// spread momentum if requested
 			if (L_dmom > 0) {
-				L_Mom = L_mom + (2.0 * G4UniformRand() - 1.0) * L_dmom;
+				L_Mom = L_mom + (2.0 * G4UniformRand()- 1.0) * L_dmom;
 				L_Theta = acos(G4UniformRand() * (cos(L_theta / rad - L_dtheta / rad) - cos(L_theta / rad + L_dtheta / rad)) + cos(L_theta / rad + L_dtheta / rad)) / rad;
 				if (lumiFlat) L_Theta = L_theta + (2.0 * G4UniformRand() - 1.0) * L_dtheta;
 
@@ -1044,7 +1058,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 			particleGun->SetParticleTime(TBUNCH2 * b);
 			// spread momentum if requested
 			if (L2_dmom > 0) {
-				L2_Mom += (2.0 * G4UniformRand() - 1.0) * L2_dmom;
+				L2_Mom += (2.0 * G4UniformRand()- 1.0) * L2_dmom;
 				L2_Theta = acos(G4UniformRand() * (cos(L2_theta / rad - L2_dtheta / rad) - cos(L2_theta / rad + L2_dtheta / rad)) + cos(L2_theta / rad + L2_dtheta / rad)) / rad;
 				if (lumi2Flat) L2_Theta += (2.0 * G4UniformRand() - 1.0) * L2_dtheta;
 				L2_Phi += (2.0 * G4UniformRand() - 1.0) * L2_dphi;
@@ -1061,7 +1075,7 @@ void MPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent) {
 
 			// spread vertex if requested
 			if (L2_dvz > 0) {
-				L2_vz += (2.0 * G4UniformRand() - 1.0) * L2_dvz;
+				L2_vz += (2.0 * G4UniformRand()- 1.0) * L2_dvz;
 			}
 			particleGun->SetParticlePosition(G4ThreeVector(L2_vx, L2_vy, L2_vz));
 

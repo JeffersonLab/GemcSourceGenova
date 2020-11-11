@@ -98,6 +98,7 @@ private:
 	double cminp, cmaxp, cMom;        ///< minimum and maximum cosmic ray momentum
 	G4ThreeVector cosmicTarget;       ///< Location of area of interest for cosmic rays
 	double cosmicRadius;              ///< radius of area of interest for cosmic rays
+	double cosmicRadiusBackProj;      ///< radius of back-projection
 	G4ThreeVector HallDim;              ///< Hall diemension threev ector
 	double HallRadius;              ///< Hall radius
 	string cosmicGeo;                 ///< type of surface for cosmic ray generation (sphere || cylinder)

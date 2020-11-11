@@ -129,21 +129,17 @@ void gMappedField::GetFieldValue_Cylindrical( const double x[3], double *Bfield,
 	double phi = 0;    // phi angle
 
 	// map plane is in ZX, phi on X axis
-	if(symmetry == "cylindrical-z")
-	{
+	if(symmetry == "cylindrical-z") {
 		LC  = x[2];
 		TC  = sqrt(x[0]*x[0] + x[1]*x[1]);
 		phi = G4ThreeVector(x[0], x[1], x[2]).phi();
-	}
-	// map plane is in XY, phi on Y axis
-	else if(symmetry == "cylindrical-x")
-	{
+		// map plane is in XY, phi on Y axis
+	} else if(symmetry == "cylindrical-x") {
 		LC  = x[0];
 		TC  = sqrt(x[1]*x[1] + x[2]*x[2]);
 		phi = G4ThreeVector(x[2], x[0], x[1]).phi();
-	}
-	// map plane is in XZ, phi on Z axis
-	else if(symmetry == "cylindrical-y")
+		// map plane is in XZ, phi on Z axis
+	} else if(symmetry == "cylindrical-y")
 	{
 		LC  = x[1];
 		TC  = sqrt(x[0]*x[0] + x[2]*x[2]);
@@ -204,20 +200,15 @@ void gMappedField::GetFieldValue_Cylindrical( const double x[3], double *Bfield,
 		double b21 = B2_2D[IT][IL+1] * (1.0 - xtr) + B2_2D[IT+1][IL+1] * xtr;
 		double b2 = b20 * (1.0 - xlr) + b21 * xlr;
 
-		if(symmetry == "cylindrical-z")
-		{
+		if(symmetry == "cylindrical-z") {
 			Bfield[0] = b1 * cos(phi);
 			Bfield[1] = b1 * sin(phi);
 			Bfield[2] = b2;
-		}
-		else if(symmetry == "cylindrical-x")
-		{
+		} else if(symmetry == "cylindrical-x") {
 			Bfield[0] = b2;
 			Bfield[1] = b1 * cos(phi);
 			Bfield[2] = b1 * sin(phi);
-		}
-		else if(symmetry == "cylindrical-y")
-		{
+		} else if(symmetry == "cylindrical-y") {
 			Bfield[1] = b2;
 			Bfield[0] = b1 * sin(phi);
 			Bfield[2] = b1 * cos(phi);
@@ -234,10 +225,10 @@ void gMappedField::GetFieldValue_Cylindrical( const double x[3], double *Bfield,
 	// so we can output units as well
 	if(verbosity>3 && FIRST_ONLY != 99)
 	{
-		cout << "  > Track position in magnetic field: "
-		<< "("  << (x[0] + mapOrigin[0])/cm << ", "
-		<< (x[1] + mapOrigin[1])/cm << ", "
-		<< (x[2] + mapOrigin[2])/cm << ") cm,  " << endl;
+		cout << "  > Track position in magnetic field map, with displacement and rotations (x,y,z)/cm:"
+		<< "("  << x[0]/cm << ", "
+		<< x[1]/cm << ", "
+		<< x[2]/cm << ") cm,  " << endl;
 		cout << "    Cylindrical: ";
 		cout << "loc. pos. = ("    << x[0]/cm << ", " << x[1]/cm << ", " << x[2]/cm << ") cm,  ";
 		cout << "tr="    << TC/cm << "cm,   long=" << LC/cm << "cm, phi=" << phi/deg << ", ";

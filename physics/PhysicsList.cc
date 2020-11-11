@@ -40,7 +40,6 @@ using namespace gstring;
 #include "G4NeutronTrackingCut.hh"
 #include "G4MuonRadiativeDecayChannelWithSpin.hh"
 #include "G4MuonDecayChannelWithSpin.hh"
-#include "G4GammaConversionToMuons.hh"
 
 // CLHEP units
 #include "CLHEP/Units/PhysicalConstants.h"
@@ -72,9 +71,14 @@ PhysicsList::PhysicsList(goptions opts) : G4VModularPhysicsList()
 		vector<string> emstripped = getStringVectorFromStringWithDelimiter(allEM[i], "_");
 		string stripped;
 
-		if(emstripped.size() == 2) stripped = trimSpacesFromString(emstripped[1]);
-		if(stripped != "")
-			g4EMList.push_back(stripped);
+		if(emstripped.size() == 2)
+			stripped = trimSpacesFromString(emstripped[1]);
+		else if (emstripped.size() == 1)
+			stripped = emstripped[0];
+		else
+			continue;
+
+		g4EMList.push_back(stripped);
 
 	}
 
@@ -248,6 +252,8 @@ void PhysicsList::SetCutForProton(double cut)
 #include "NuBeam.hh"
 
 #include "G4OpticalPhysics.hh"
+#include "G4SynchrotronRadiation.hh"
+#include "G4SynchrotronRadiationInMat.hh"
 
 #include "G4StepLimiter.hh"
 
@@ -359,8 +365,9 @@ void PhysicsList::ConstructProcess()
 {
 	AddTransportation();
 	int fastmcMode = gemcOpt.optMap["FASTMCMODE"].arg;
+	int synrad = gemcOpt.optMap["SYNRAD"].arg;
 
-	if(fastmcMode < 2) {
+	if(fastmcMode%10 < 2) {
 		G4ProcessTable* processTable = G4ProcessTable::GetProcessTable();
 		G4VProcess* decay;
 
@@ -372,7 +379,15 @@ void PhysicsList::ConstructProcess()
 		for(size_t i=0; i<g4HadronicPhysics.size(); i++)
 			g4HadronicPhysics[i]->ConstructProcess();
 
-		// auto theParticleIterator = GetParticleIterator();
+		// sync radiation
+		G4SynchrotronRadiation*      fSync    = nullptr;
+		G4SynchrotronRadiationInMat* fSyncMat = nullptr;
+
+			 if (synrad == 1) fSync    = new G4SynchrotronRadiation();
+		else if (synrad == 2) fSyncMat = new G4SynchrotronRadiationInMat();
+		//G4AutoDelete::Register(fSync);
+
+		 auto theParticleIterator = GetParticleIterator();
 
 		// PhysicsList contains theParticleIterator
 		theParticleIterator->reset();
@@ -390,7 +405,34 @@ void PhysicsList::ConstructProcess()
 				if(verbosity > 2)
 					cout << "   >  Adding Step Limiter for " << pname << endl;
 
-				pmanager->AddProcess(new G4StepLimiter,       -1,-1,3);
+				pmanager->AddProcess(new G4StepLimiter,       -1,-1, 3);
+			}
+
+			// G4SynchrotronRadiation if requested
+			if (synrad == 1) {
+
+				if (pname == "e-") {
+					//electron
+					pmanager->AddProcess(fSync,               -1,-1, 4);
+					pmanager->AddProcess(new G4StepLimiter,   -1,-1, 5);
+
+				} else if (pname == "e+") {
+					//positron
+					pmanager->AddProcess(fSync,              -1,-1, 5);
+					pmanager->AddProcess(new G4StepLimiter,  -1,-1, 6);
+				}
+			} else if (synrad == 2) {
+
+				if (pname == "e-") {
+					//electron
+					pmanager->AddProcess(fSyncMat,            -1,-1, 4);
+					pmanager->AddProcess(new G4StepLimiter,   -1,-1, 5);
+
+				} else if (pname == "e+") {
+					//positron
+					pmanager->AddProcess(fSyncMat,           -1,-1, 5);
+					pmanager->AddProcess(new G4StepLimiter,  -1,-1, 6);
+				}
 			}
 
 			if(muonRadDecay){
@@ -405,19 +447,4 @@ void PhysicsList::ConstructProcess()
 			}
 		}
 	}
-    const G4ParticleDefinition* particle = G4Gamma::Gamma();
-    G4ProcessManager* pmanager = particle->GetProcessManager();
-    pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
-    
-
 }
-
-
-
-
-
-
-
-
-
-
