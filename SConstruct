@@ -155,6 +155,7 @@ gemc_sources = Split("""
 
 env.Append(LIBPATH = ['lib'])
 env.Prepend(LIBS =  ['gmaterials', 'gmirrors', 'gparameters', 'gutilities', 'gdetector', 'gsensitivity', 'gphysics', 'gfields', 'ghitprocess', 'goutput', 'ggui'])
+env.AppendUnique(LIBS = 'tbb')
 env.Program(source = gemc_sources, target = "gemc")
 
 
