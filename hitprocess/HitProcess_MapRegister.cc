@@ -31,8 +31,6 @@
 #include "HPS/SVT_hitprocess.h"        ///< Silicon Vertex Trackers.
 #include "HPS/muon_hodo_hitprocess.h"  ///< HPS Muon Hodoscopes
 
-// Cebaf
-#include "injector/bubble_hitprocess.h"       ///< Calorimeter Crystals
 
 // eic
 #include "eic/eic_compton_hitprocess.h"
@@ -41,84 +39,75 @@
 #include "eic/eic_preshower_hitprocess.h"
 #include "eic/eic_rich_hitprocess.h"
 
-map<string, HitProcess_Factory> HitProcess_Map(string experiments)
-{
-	
+// eee
+#include "eee/eee_veto_hitprocess.h"
+
+map<string, HitProcess_Factory> HitProcess_Map(string experiments) {
+
 	map<string, HitProcess_Factory> hitMap;
-	
+
 	stringstream exps(experiments);
 	string EXP;
-	
+
 	cout << endl;
-	while(!exps.eof())
-	{
+	while (!exps.eof()) {
 		exps >> EXP;
 		cout << "  >> Registering experiment \"" << EXP << "\" hit processes " << endl;
-		
+
 		// flux is independent of experiment
-		hitMap["flux"]           = &flux_HitProcess::createHitClass;
+		hitMap["flux"] = &flux_HitProcess::createHitClass;
 		// mirror is also a flux detector
-		hitMap["mirror"]         = &flux_HitProcess::createHitClass;
+		hitMap["mirror"] = &flux_HitProcess::createHitClass;
 
 		// CLAS12
-		if(EXP == "clas12")
-		{
-			hitMap["rtpc"]     = &rtpc_HitProcess::createHitClass;
-			hitMap["bst"]      = &bst_HitProcess::createHitClass;
-			hitMap["cnd"]      = &cnd_HitProcess::createHitClass;
-			hitMap["ctof"]     = &ctof_HitProcess::createHitClass;
-			hitMap["dc"]       = &dc_HitProcess::createHitClass;
-			hitMap["ec"]       = &ec_HitProcess::createHitClass;
-			hitMap["ecs"]      = &ec_HitProcess::createHitClass;
-			hitMap["ftof"]     = &ftof_HitProcess::createHitClass;
-			hitMap["ft_cal"]   = &ft_cal_HitProcess::createHitClass;
-			hitMap["ft_hodo"]  = &ft_hodo_HitProcess::createHitClass;
-			hitMap["htcc"]     = &htcc_HitProcess::createHitClass;
-			hitMap["ltcc"]     = &ltcc_HitProcess::createHitClass;
-			hitMap["fmt"]      = &FMT_HitProcess::createHitClass;
-			hitMap["bmt"]      = &BMT_HitProcess::createHitClass;
-			hitMap["ftm"]      = &ftm_HitProcess::createHitClass;
-			hitMap["pcal"]     = &pcal_HitProcess::createHitClass;
-			hitMap["rich"]     = &rich_HitProcess::createHitClass;
+		if (EXP == "clas12") {
+		/*	hitMap["rtpc"] = &rtpc_HitProcess::createHitClass;
+			hitMap["bst"] = &bst_HitProcess::createHitClass;
+			hitMap["cnd"] = &cnd_HitProcess::createHitClass;
+			hitMap["ctof"] = &ctof_HitProcess::createHitClass;
+			hitMap["dc"] = &dc_HitProcess::createHitClass;
+			hitMap["ec"] = &ec_HitProcess::createHitClass;
+			hitMap["ecs"] = &ec_HitProcess::createHitClass;
+			hitMap["ftof"] = &ftof_HitProcess::createHitClass;
+			hitMap["ft_cal"] = &ft_cal_HitProcess::createHitClass;
+			hitMap["ft_hodo"] = &ft_hodo_HitProcess::createHitClass;
+			hitMap["htcc"] = &htcc_HitProcess::createHitClass;
+			hitMap["ltcc"] = &ltcc_HitProcess::createHitClass;
+			hitMap["fmt"] = &FMT_HitProcess::createHitClass;
+			hitMap["bmt"] = &BMT_HitProcess::createHitClass;
+			hitMap["ftm"] = &ftm_HitProcess::createHitClass;
+			hitMap["pcal"] = &pcal_HitProcess::createHitClass;
+			hitMap["rich"] = &rich_HitProcess::createHitClass;*/
 		}
 		// Aprime
-		else if(EXP == "HPS")
-		{
-			hitMap["SVT"]        = &SVT_HitProcess::createHitClass;
-			hitMap["ECAL"]       = &ECAL_HitProcess::createHitClass;
-			hitMap["muon_hodo"]  = &muon_hodo_HitProcess::createHitClass;
+		else if (EXP == "HPS") {
+			/*hitMap["SVT"] = &SVT_HitProcess::createHitClass;
+			hitMap["ECAL"] = &ECAL_HitProcess::createHitClass;
+			hitMap["muon_hodo"] = &muon_hodo_HitProcess::createHitClass;*/
 		}
 		// GlueX
-		else if( EXP == "gluex" )
-		{
+		else if (EXP == "gluex") {
 		}
 		// EIC
-		else if( EXP == "eic" )
-		{
-			hitMap["eic_dirc"]  = &eic_dirc_HitProcess::createHitClass;
-			hitMap["eic_ec"]  = &eic_ec_HitProcess::createHitClass;
-			hitMap["eic_preshower"]  = &eic_preshower_HitProcess::createHitClass;    
-			hitMap["eic_rich"]  = &eic_rich_HitProcess::createHitClass;
-			hitMap["eic_compton"]  = &eic_compton_HitProcess::createHitClass;  
+		else if (EXP == "eic") {
+			/*hitMap["eic_dirc"] = &eic_dirc_HitProcess::createHitClass;
+			hitMap["eic_ec"] = &eic_ec_HitProcess::createHitClass;
+			hitMap["eic_preshower"] = &eic_preshower_HitProcess::createHitClass;
+			hitMap["eic_rich"] = &eic_rich_HitProcess::createHitClass;
+			hitMap["eic_compton"] = &eic_compton_HitProcess::createHitClass;*/
 		}
 		// SoLID
-		else if( EXP == "solid" )
-		{
+		else if (EXP == "eee") {
+			hitMap["eee_veto"] = &eee_veto_HitProcess::createHitClass;
+		} else if (EXP == "BDX") {
+			hitMap["cormo"] = &cormo_HitProcess::createHitClass;
+			hitMap["veto"] = &veto_HitProcess::createHitClass;
+			hitMap["crs"] = &crs_HitProcess::createHitClass;
 		}
-		else if( EXP == "BDX" )
-		{
-			hitMap["cormo"]      = &cormo_HitProcess::createHitClass;
-			hitMap["veto"]       = &veto_HitProcess::createHitClass;
-			hitMap["crs"]        = &crs_HitProcess::createHitClass;
-		}
-		else if( EXP == "injector" )
-		{
-			hitMap["bubble"]     = &bubble_HitProcess::createHitClass;
-		}
-		
+
 	}
-	
+
 	cout << endl;
 	return hitMap;
-	
+
 }

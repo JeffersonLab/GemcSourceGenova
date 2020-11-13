@@ -1,20 +1,15 @@
-#ifndef bubble_HITPROCESS_H
-#define bubble_HITPROCESS_H 1
+#ifndef eee_veto_HITPROCESS_H
+#define eee_veto_HITPROCESS_H 1
 
 // gemc headers
 #include "HitProcess.h"
 
 // Class definition
-/// \class bubble_HitProcess
-/// <b> Bubble Hit Process Routine</b>\n\n
-/// The Calibration Constants are:\n
-/// - VEF is the effective velocity of propogation in the scintillator
-
-class bubble_HitProcess : public HitProcess
+class eee_veto_HitProcess : public HitProcess
 {
 public:
 
-	~bubble_HitProcess(){;}
+	~eee_veto_HitProcess(){;}
 
 	// - integrateDgt: returns digitized information integrated over the hit
 	map<string, double> integrateDgt(MHit*, int);
@@ -33,10 +28,15 @@ public:
 	vector<identifier> processID(vector<identifier>, G4Step*, detector);
 
 	// creates the HitProcess
-	static HitProcess *createHitClass() {return new bubble_HitProcess;}
+	static HitProcess *createHitClass() {return new eee_veto_HitProcess;}
+
+    double BirksAttenuation(double,double,int,double);
+    double BirksAttenuation2(double,double,int,double);
+
 
 	// - electronicNoise: returns a vector of hits generated / by electronics.
 	vector<MHit*> electronicNoise();
+
 };
 
 #endif

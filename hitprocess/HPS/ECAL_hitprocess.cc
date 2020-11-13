@@ -15,7 +15,7 @@ map<string, double> ECAL_HitProcess :: integrateDgt(MHit* aHit, int hitn)
 	vector<identifier> identity = aHit->GetId();
 	trueInfos tInfos(aHit);
 
-	
+
 	// R.De Vita (April 2009)
 	
 	// relevant parameter for digitization (in the future should be read from database)
@@ -51,6 +51,8 @@ map<string, double> ECAL_HitProcess :: integrateDgt(MHit* aHit, int hitn)
 	vector<G4double> times = aHit->GetTime();
 	vector<G4ThreeVector> Lpos = aHit->GetLPos();
 	vector<G4double>      Edep = aHit->GetEdep();
+
+
 	if(tInfos.eTot>0)
 	{
 		for(unsigned int s=0; s<tInfos.nsteps; s++)
@@ -77,9 +79,10 @@ map<string, double> ECAL_HitProcess :: integrateDgt(MHit* aHit, int hitn)
    	
 	}
 	
+
 	dgtz["hitn"] = hitn;
-	dgtz["idx"]  = idx;
-	dgtz["idy"]  = idy;
+	dgtz["ih"]  = idx;
+	dgtz["iv"]  = idy;
 	dgtz["adc"]  = adc;
 	dgtz["tdc"]  = tdc;
 	

@@ -103,39 +103,10 @@ env.Append(CPPPATH = ['hitprocess/Aprime', 'hitprocess/GlueX', 'hitprocess/solid
 hitp_sources = Split("""
 	hitprocess/HitProcess_MapRegister.cc
 	hitprocess/flux_hitprocess.cc
-	hitprocess/clas12/micromegas/FMT_hitprocess.cc
-	hitprocess/clas12/micromegas/fmt_strip.cc	
-	hitprocess/clas12/micromegas/BMT_hitprocess.cc
-	hitprocess/clas12/micromegas/bmt_strip.cc
-	hitprocess/clas12/micromegas/ftm_hitprocess.cc
-	hitprocess/clas12/micromegas/ftm_strip.cc
-	hitprocess/clas12/rtpc_hitprocess.cc
-	hitprocess/clas12/svt/bst_hitprocess.cc
-	hitprocess/clas12/svt/bst_strip.cc
-	hitprocess/clas12/ctof_hitprocess.cc
-	hitprocess/clas12/cnd_hitprocess.cc
-	hitprocess/clas12/dc_hitprocess.cc
-	hitprocess/clas12/ec_hitprocess.cc
-	hitprocess/clas12/ecs_hitprocess.cc
-	hitprocess/clas12/ftof_hitprocess.cc
-	hitprocess/clas12/ft_cal_hitprocess.cc
-	hitprocess/clas12/ft_hodo_hitprocess.cc
-	hitprocess/clas12/htcc_hitprocess.cc
-	hitprocess/clas12/ltcc_hitprocess.cc
-	hitprocess/clas12/pcal_hitprocess.cc
-	hitprocess/clas12/rich_hitprocess.cc
 	hitprocess/bdx/cormo_hitprocess.cc
 	hitprocess/bdx/veto_hitprocess.cc
 	hitprocess/bdx/crs_hitprocess.cc
-	hitprocess/eic/eic_compton_hitprocess.cc
-	hitprocess/eic/eic_dirc_hitprocess.cc
-	hitprocess/eic/eic_ec_hitprocess.cc
-	hitprocess/eic/eic_preshower_hitprocess.cc
-	hitprocess/eic/eic_rich_hitprocess.cc	
-	hitprocess/injector/bubble_hitprocess.cc
-	hitprocess/HPS/ECAL_hitprocess.cc
-	hitprocess/HPS/SVT_hitprocess.cc
-	hitprocess/HPS/muon_hodo_hitprocess.cc""")
+	hitprocess/eee/eee_veto_hitprocess.cc""")
 env.Library(source = hitp_sources, target = "lib/ghitprocess")
 
 
