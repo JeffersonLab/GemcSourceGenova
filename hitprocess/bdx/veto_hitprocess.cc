@@ -14,8 +14,17 @@ double att_l_ang_IV = 120;
 double att_l_ang_OV = 140;
 double TrGrvIL = 0.6;
 double TrGrvOL = 0.65;
+
+
 double MeV2peIV[8] = { 57., 57., 66.6, 52.6, 50., 57.1, 66.6, 50. };
 double MeV2peOV[8] = { 38.4615, 33.3333, 200, 40, 33.8983, 42.5532, 40, 41.6667 };
+
+//tuning
+double tunOV[8] = {1.14, 1.14, 1., 1.08, 1.2, 1.23, 1.23, 1.23};
+double tunIV[8] = {1.14, 1.08, 1.14, 1.14, 1.2, 1.08, 1.08, 1.14};
+
+
+
 double LightSpeedAng = 15. * 360 / (2 * 3.1415 * 9.);
 
 double att_z_IV = 100 * cm;
@@ -867,7 +876,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 					double att_l_ang;
 					double att_z;
 					double TrGrv;
-					double *MeV2pe;
+					//	double *MeV2pe;
+					double MeV2pe[8];
 
 					double Qdep;
 					unsigned int NGrv;
@@ -890,7 +900,8 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 							if (chan == 701) { //OV                      // outer veto sipm staggered by 22.5deg
 								PhiLoc = 360 - abs((j) * 45. - phiCluster - 22.5);
 								if (PhiLoc < 0) PhiLoc = 360 + PhiLoc;
-								MeV2pe = MeV2peOV;
+								//	MeV2pe = MeV2peOV;
+								MeV2pe[j] = MeV2peOV[j]*tunOV[j];
 								TrGrv = TrGrvOL;
 								att_l_ang = att_l_ang_OV;
 								att_z = att_z_OV;
@@ -902,7 +913,7 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 								PhiLoc = fabs(phiCluster - PhiSipm);
 								if (PhiLoc>360) PhiLoc=PhiLoc-360;
 								if (PhiLoc<0) PhiLoc=PhiLoc+360;
-								MeV2pe = MeV2peIV;
+								MeV2pe[j] = MeV2peIV[j]*tunIV[j];
 								TrGrv = TrGrvIL;
 								att_l_ang = att_l_ang_IV;
 								att_z = att_z_IV;
@@ -920,8 +931,9 @@ map<string, double> veto_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 							if (PhiLoc>180) {
 								attZ_R=1-(1-exp(-DeltaZ/att_z))*cos((360.-PhiLoc)*3.14156/(2*180.));
 							}
+							//	Qdep = MeV2pe[j] * ghit.Esum * (pow(TrGrv, NGrv) * exp(-PhiLoc / att_l_ang) * attZ_L + pow(TrGrv, (7 - NGrv)) * exp(-abs(360. - PhiLoc) / att_l_ang) * attZ_R);
+							//TEST ATT//
 							Qdep = MeV2pe[j] * ghit.Esum * (pow(TrGrv, NGrv) * exp(-PhiLoc / att_l_ang) * attZ_L + pow(TrGrv, (7 - NGrv)) * exp(-abs(360. - PhiLoc) / att_l_ang) * attZ_R);
-
 
 
 							QSipmBdxMini[j] = QSipmBdxMini[j] + Qdep;
