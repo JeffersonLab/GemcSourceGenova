@@ -42,6 +42,9 @@
 // eee
 #include "eee/eee_veto_hitprocess.h"
 
+//JPOS
+#include "JPOS/JPOS_crs_hitprocess.h"
+
 map<string, HitProcess_Factory> HitProcess_Map(string experiments) {
 
 	map<string, HitProcess_Factory> hitMap;
@@ -104,6 +107,9 @@ map<string, HitProcess_Factory> HitProcess_Map(string experiments) {
 			hitMap["veto"] = &veto_HitProcess::createHitClass;
 			hitMap["crs"] = &crs_HitProcess::createHitClass;
 		}
+		else if (EXP == "JPOS"){
+			hitMap["JPOS_crs"]= &JPOS_crs_HitProcess::createHitClass;
+		}			
 
 	}
 
