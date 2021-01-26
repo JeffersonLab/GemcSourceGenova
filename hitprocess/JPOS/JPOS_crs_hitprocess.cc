@@ -31,7 +31,7 @@ map<string, double> JPOS_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
   }
   
   
-  cout<<"Energy tot: "<<Etot<<endl;
+  //cout<<"Energy tot: "<<Etot<<endl;
   
   
   dgtz["hitn"] = 0;
