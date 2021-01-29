@@ -448,9 +448,10 @@ void PhysicsList::ConstructProcess()
 				}
 			}
 		}
-	}
+	
 
 	const G4ParticleDefinition* particle = G4Gamma::Gamma();
 	G4ProcessManager* pmanager = particle->GetProcessManager();
 	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
+	}
 }
