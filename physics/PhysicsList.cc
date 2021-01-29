@@ -40,6 +40,8 @@ using namespace gstring;
 #include "G4NeutronTrackingCut.hh"
 #include "G4MuonRadiativeDecayChannelWithSpin.hh"
 #include "G4MuonDecayChannelWithSpin.hh"
+#include "G4GammaConversionToMuons.hh"
+
 
 // CLHEP units
 #include "CLHEP/Units/PhysicalConstants.h"
@@ -446,5 +448,10 @@ void PhysicsList::ConstructProcess()
 				}
 			}
 		}
+	
+
+	const G4ParticleDefinition* particle = G4Gamma::Gamma();
+	G4ProcessManager* pmanager = particle->GetProcessManager();
+	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
 	}
 }
