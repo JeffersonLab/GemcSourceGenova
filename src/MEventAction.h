@@ -131,7 +131,7 @@ public:
 	string catch_v;         ///< Print Log for volume
 	int   SAVE_ALL_MOTHERS; ///< >= 1: Loops over the stored trajectories to store mother vertex and pid in the output. >=2: Also saves all particles that produced a hit onto LUND format
 	int   MAXP;             ///< Max number of generated particles to save on output stream
-	    int   FILTER_HITS;      ///< If set to 1, do not write any output unless there is a hit somewhere
+	int   FILTER_HITS;      ///< If set to 1, do not write any output unless there is a hit somewhere
     string WRITE_ALLRAW;    ///< List of detectors for which geant4 all raw info need to be saved
 	string WRITE_INTRAW;    ///< List of detectors for which geant4 raw integrated info need to be saved
 	string WRITE_INTDGT;    ///< List of detectors for which digitized integrated info need to be NOT saved
@@ -149,6 +149,14 @@ public:
 	void saveBGPartsToLund();
 	ofstream *lundOutput;
 	map<int, BGParts> bgMap;
+
+	//A.C. this part is related to JPOS trigger, where we want to save in the output only
+	bool do_JPOS_TRG;
+	string SDprompt;
+	double Eprompt;
+	double Eprompt_MIN,Eprompt_MAX;
+	double Tprompt_MIN,Tprompt_MAX;
+
 
 public:
 	void BeginOfEventAction(const G4Event*);            ///< Routine at the start of each event

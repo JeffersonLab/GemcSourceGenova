@@ -311,7 +311,9 @@ int main( int argc, char **argv )
 	gActions->evtAction->SeDe_Map         = ExpHall->SeDe_Map;
 	gActions->evtAction->banksMap         = &banksMap;
 	gActions->evtAction->gen_action       = gActions->genAction;
- 	
+ 	gActions->stpAction->evt_action		  = gActions->evtAction;
+
+
 	///< passing output process factory to sensitive detectors
 	map<string, sensitiveDetector*>::iterator it;
 	for(it = ExpHall->SeDe_Map.begin(); it != ExpHall->SeDe_Map.end(); it++)
