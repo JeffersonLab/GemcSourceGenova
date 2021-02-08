@@ -5,6 +5,7 @@
 
 // gemc headers
 #include "MEventAction.h"
+#include "string_utilities.h"
 #include "Hit.h"
 
 // mlibrary
@@ -70,6 +71,13 @@ vector<G4ThreeVector> vector_mvert(map<int, TInfos> tinfos, vector<int> tids) {
 }
 
 MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
+
+	hitProcessMap = 0;
+	gen_action = 0;
+	outputFactoryMap = 0;
+	outContainer = 0;
+	banksMap = 0;
+
 	gemcOpt = opts;
 	hd_msg = gemcOpt.optMap["LOG_MSG"].args + " Event Action: >> ";
 	Modulo = (int) gemcOpt.optMap["PRINT_EVENT"].arg;
@@ -101,13 +109,48 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	}
 
 	evtN = gemcOpt.optMap["EVTN"].arg;
+
+	//These are for JPOS trigger
+	do_JPOS_TRG = false;
+	Eprompt = 0;
+	SDprompt = "";
+	Eprompt_MIN = 0;
+	Eprompt_MAX = 100 * TeV;
+	Tprompt_MIN = 0;
+	Tprompt_MAX = 100 * ms;
+
+	if (gemcOpt.optMap.find("JPOS_TRG") != gemcOpt.optMap.end()) {
+		vector<string> cvalues = get_info(gemcOpt.optMap["JPOS_TRG"].args, string(",\""));
+		if (cvalues.size() != 5) {
+			cout << "ERR: JPOS_TRG must be 5 numbers, separated with comma: SD_name,Eprompt_MIN(with_unit),Eprompt_MAX(with_unit),Tprompt_min(with_unit),Tprompt_max(with_unit)";
+			cout << "endl";
+			exit(1);
+		}
+		do_JPOS_TRG = true;
+		SDprompt = cvalues[0];
+		Eprompt_MIN = get_number(cvalues[1]);
+		Eprompt_MAX = get_number(cvalues[2]);
+		Tprompt_MIN = get_number(cvalues[3]);
+		Tprompt_MAX = get_number(cvalues[4]);
+
+		if (VERB > 3) {
+			cout << "MEventAction JPOS_TRG settings:" << endl;
+			cout << "SDprompt = " << SDprompt << endl;
+			cout << "Eprompt_MIN = " << Eprompt_MIN / GeV << " GeV " << endl;
+			cout << "Eprompt_MAX = " << Eprompt_MAX / GeV << " GeV " << endl;
+			cout << "Tprompt_MIN = " << Tprompt_MIN / ns << " ns " << endl;
+			cout << "Tprompt_MAX = " << Tprompt_MAX / ns << " ns " << endl;
+
+		}
+	}
+
 }
 
 MEventAction::~MEventAction() {
 	if (SAVE_ALL_MOTHERS > 1) lundOutput->close();
 }
 
-void MEventAction::BeginOfEventAction(const G4Event* evt) {
+void MEventAction::BeginOfEventAction(const G4Event *evt) {
 	if (gen_action->isFileOpen() == false) {
 		G4RunManager *runManager = G4RunManager::GetRunManager();
 		;
@@ -123,19 +166,22 @@ void MEventAction::BeginOfEventAction(const G4Event* evt) {
 		cout << hd_msg << " Begin of event " << evtN << "  Run Number: " << rw.runNo;
 		if (rw.isNewRun) cout << " (new) ";
 		cout << endl;
-		cout << hd_msg << " Random Number: " << G4UniformRand()<< endl;
+		cout << hd_msg << " Random Number: " << G4UniformRand() << endl;
 		// CLHEP::HepRandom::showEngineStatus();
 
 	}
 
+	//JPOS_CRS part
+	Eprompt = 0;
+
 }
 
-void MEventAction::EndOfEventAction(const G4Event* evt) {
+void MEventAction::EndOfEventAction(const G4Event *evt) {
 	if (gen_action->isFileOpen() == false) {
 		return;
 	}
 
-	MHitCollection* MHC;
+	MHitCollection *MHC;
 	int nhits;
 
 	// if FILTER_HITS is set, checking if there are any hits
@@ -151,6 +197,18 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 	}
 
 	if (evtN % Modulo == 0) cout << hd_msg << " Starting Event Action Routine " << evtN << "  Run Number: " << rw.runNo << endl;
+
+	if (do_JPOS_TRG) {
+		if (VERB > 3) {
+			cout << "EndOfEventAction " << evtN << "Eprompt: " << Eprompt/GeV << " GeV "<< endl;
+		}
+		if ((Eprompt<Eprompt_MIN)||(Eprompt>Eprompt_MAX)){
+			if (VERB > 3) {
+				cout<<" DO NOT SAVE"<<endl;
+			}
+			return;
+		}
+	}
 
 	// building the tracks set database with all the tracks in all the hits
 	// if SAVE_ALL_MOTHERS is set
@@ -199,7 +257,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 			// looping over all tracks
 			for (unsigned int i = 0; i < trajectoryContainer->size(); i++) {
 				// cout << " index track " << i << endl;
-				G4Trajectory* trj = (G4Trajectory*) (*(evt->GetTrajectoryContainer()))[i];
+				G4Trajectory *trj = (G4Trajectory*) (*(evt->GetTrajectoryContainer()))[i];
 				int tid = trj->GetTrackID();
 
 				// adding track in mom daughter relationship
@@ -236,7 +294,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 			int mtid = (*itm).second.mtid;
 			// looking for mtid infos in the trajectoryContainer
 			for (unsigned int i = 0; i < trajectoryContainer->size() && mtid != 0; i++) {
-				G4Trajectory* trj = (G4Trajectory*) (*(evt->GetTrajectoryContainer()))[i];
+				G4Trajectory *trj = (G4Trajectory*) (*(evt->GetTrajectoryContainer()))[i];
 				int tid = trj->GetTrackID();
 				if (tid == mtid) {
 					tinfos[(*itm).first].mpid = trj->GetPDGEncoding();
@@ -341,7 +399,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 	vector<generatedParticle> MPrimaries;
 	for (int pv = 0; pv < evt->GetNumberOfPrimaryVertex() && pv < MAXP; pv++) {
 		generatedParticle Mparticle;
-		G4PrimaryVertex* MPV = evt->GetPrimaryVertex(pv);
+		G4PrimaryVertex *MPV = evt->GetPrimaryVertex(pv);
 		Mparticle.vertex = MPV->GetPosition();
 		double thisTime = MPV->GetT0();
 		int thisMult = MPV->GetNumberOfParticle();
@@ -389,7 +447,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 			}
 
 			for (int h = 0; h < nhits; h++) {
-				MHit* aHit = (*MHC)[h];
+				MHit *aHit = (*MHC)[h];
 				if (aHit->isElectronicNoise) continue;
 
 				hitOutput thisHitOutput;
@@ -497,7 +555,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 				for (int h = 0; h < nhits; h++) {
 
 					hitOutput thisHitOutput;
-					MHit* aHit = (*MHC)[h];
+					MHit *aHit = (*MHC)[h];
 
 					thisHitOutput.setDgtz(hitProcessRoutine->integrateDgt(aHit, h + 1));
 					allDgtOutput.push_back(thisHitOutput);
@@ -527,7 +585,7 @@ void MEventAction::EndOfEventAction(const G4Event* evt) {
 
 					hitOutput thisHitOutput;
 
-					MHit* aHit = (*MHC)[h];
+					MHit *aHit = (*MHC)[h];
 
 					// process each step to produce a charge/time digitized information / step
 					thisHitOutput.setChargeTime(hitProcessRoutine->chargeTime(aHit, h));
