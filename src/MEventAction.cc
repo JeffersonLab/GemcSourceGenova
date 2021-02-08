@@ -119,7 +119,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	Tprompt_MIN = 0;
 	Tprompt_MAX = 100 * ms;
 
-	if (gemcOpt.optMap.find("JPOS_TRG") != gemcOpt.optMap.end()) {
+	if (((string)gemcOpt.optMap["JPOS_TRG"].args) != "no") {
 		vector<string> cvalues = get_info(gemcOpt.optMap["JPOS_TRG"].args, string(",\""));
 		if (cvalues.size() != 5) {
 			cout << "ERR: JPOS_TRG must be 5 numbers, separated with comma: SD_name,Eprompt_MIN(with_unit),Eprompt_MAX(with_unit),Tprompt_min(with_unit),Tprompt_max(with_unit)";
