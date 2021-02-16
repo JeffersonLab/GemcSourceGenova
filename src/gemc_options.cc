@@ -567,6 +567,13 @@ void goptions::setGoptions() {
 	optMap["TSAMPLING"].type = 1;
 	optMap["TSAMPLING"].ctgr = "output";
 
+
+	//JPOS_TRG
+	optMap["JPOS_TRG"].args = "no";
+	optMap["JPOS_TRG"].help = "Activates JPOS_TRG mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
+	optMap["JPOS_TRG"].type = 1;
+	optMap["JPOS_TRG"].ctgr = "output";
+
 	// Physics
 	optMap["PHYSICS"].args = "STD + FTFP_BERT";
 	optMap["PHYSICS"].help = "  Physics List. The list is modular. \n\n";

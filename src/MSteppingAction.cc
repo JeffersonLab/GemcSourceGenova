@@ -3,37 +3,34 @@
 
 // gemc headers
 #include "MSteppingAction.h"
+#include "MEventAction.h"
 
-MSteppingAction::MSteppingAction(goptions Opt)
-{
-	gemcOpt   = Opt;
+MSteppingAction::MSteppingAction(goptions Opt) {
+	gemcOpt = Opt;
 	energyCut = gemcOpt.optMap["ENERGY_CUT"].arg;
 	max_x_pos = gemcOpt.optMap["MAX_X_POS"].arg;
 	max_y_pos = gemcOpt.optMap["MAX_Y_POS"].arg;
 	max_z_pos = gemcOpt.optMap["MAX_Z_POS"].arg;
-	
-//	oldpos = G4ThreeVector(0,0,0);
-//	nsame  = 0;
+	evt_action = 0;
+
+	//get here the relevant parameters for the jpos trigger.
+
 }
 
-MSteppingAction::~MSteppingAction(){ cout << " > Closing Stepping Action." << endl;}
+MSteppingAction::~MSteppingAction() {
+	cout << " > Closing Stepping Action." << endl;
+}
 
+void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
+	G4ThreeVector pos = aStep->GetPostStepPoint()->GetPosition();      ///< Global Coordinates of interaction
+	G4Track *track = aStep->GetTrack();
 
-void MSteppingAction::UserSteppingAction(const G4Step* aStep)
-{
-	G4ThreeVector   pos   = aStep->GetPostStepPoint()->GetPosition();      ///< Global Coordinates of interaction
-	G4Track*        track = aStep->GetTrack();
-	
-	if(fabs(pos.x()) > max_x_pos ||
-	   fabs(pos.y()) > max_y_pos ||
-	   fabs(pos.z()) > max_z_pos ) track->SetTrackStatus(fStopAndKill);   ///< Killing track if outside of interest region
-	
-	if(track->GetKineticEnergy() < energyCut)
-		track->SetTrackStatus(fStopAndKill);
-	
+	if (fabs(pos.x()) > max_x_pos || fabs(pos.y()) > max_y_pos || fabs(pos.z()) > max_z_pos) track->SetTrackStatus(fStopAndKill);   ///< Killing track if outside of interest region
+
+	if (track->GetKineticEnergy() < energyCut) track->SetTrackStatus(fStopAndKill);
+
 	// Anything passing material "Kryptonite" is killed
-	if(track->GetMaterial()->GetName() == "Kryptonite")
-	{
+	if (track->GetMaterial()->GetName() == "Kryptonite") {
 		track->SetTrackStatus(fStopAndKill);
 	}
 
@@ -42,25 +39,33 @@ void MSteppingAction::UserSteppingAction(const G4Step* aStep)
 		track->SetTrackStatus(fKillTrackAndSecondaries);
 	}
 
-	if(track->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition())
-	{
-        // killing photon if above 100 steps
-        // notice we rarely go above 20 steps for all normal CC detectors
-        if(track->GetCurrentStepNumber() > 100)
-            track->SetTrackStatus(fStopAndKill);
-       
-        if(track->GetLogicalVolumeAtVertex()->GetMaterial()->GetName() == "SemiMirror")
-            track->SetTrackStatus(fStopAndKill);
+	if (track->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition()) {
+		// killing photon if above 100 steps
+		// notice we rarely go above 20 steps for all normal CC detectors
+		if (track->GetCurrentStepNumber() > 100) track->SetTrackStatus(fStopAndKill);
+
+		if (track->GetLogicalVolumeAtVertex()->GetMaterial()->GetName() == "SemiMirror") track->SetTrackStatus(fStopAndKill);
 	}
-	
+
 	// limiting steps in one volume to 10000
 	// it may be the new version of geant4, or
 	// accurate magnetic fields, but it does happen that sometimes
 	// a track get stuck into a magnetic field infinite loop
-	if(track->GetCurrentStepNumber() > 10000)
-		track->SetTrackStatus(fStopAndKill);
+	if (track->GetCurrentStepNumber() > 10000) track->SetTrackStatus(fStopAndKill);
 
-	
+	//JPOS_CRS part
+	if (evt_action->do_JPOS_TRG) {
+		if (aStep->GetPreStepPoint()->GetSensitiveDetector() != 0) {
+			G4VSensitiveDetector *SD = aStep->GetPreStepPoint()->GetSensitiveDetector();
+			if (SD->GetName() == evt_action->SDprompt) {
+				if ((aStep->GetPreStepPoint()->GetGlobalTime() > evt_action->Tprompt_MIN) && (aStep->GetPreStepPoint()->GetGlobalTime() < evt_action->Tprompt_MAX)) {
+					evt_action->Eprompt += aStep->GetTotalEnergyDeposit();
+				}
+			}
+		}
+	}
+
+
 //	// checking if a step is stuck in the same position
 //	// for more than 10 steps
 //    // this should be revisited

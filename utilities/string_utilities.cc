@@ -111,6 +111,8 @@ double get_number(string v,int warn_no_unit)
 		else if(  units == "gauss")     answer *= gauss;
 		else if(  units == "kilogauss") answer *= gauss*1000;
 		else if(  units == "ns")        answer *= ns;
+		else if(  units == "us")        answer *= microsecond ;
+		else if(  units == "mus")       answer *= microsecond ;
 		else if(  units == "na")        answer *= 1;
 		else if(  units == "counts")    answer *= 1;
 		else cout << ">" << units << "<: unit not recognized for string <" << v << ">" << endl;

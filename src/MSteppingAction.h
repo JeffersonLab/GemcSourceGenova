@@ -13,6 +13,7 @@
 // gemc headers
 #include "options.h"
 
+class MEventAction;
 class MSteppingAction : public G4UserSteppingAction
 {
 	public:
@@ -32,6 +33,10 @@ class MSteppingAction : public G4UserSteppingAction
 //		int            nsame;
 		
 		void UserSteppingAction(const G4Step*);
+
+		MEventAction* evt_action;
+	private:
+
 };
 
 #endif
