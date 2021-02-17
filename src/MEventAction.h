@@ -167,6 +167,12 @@ public:
 	void retrieveRandomFromEvio(string file, int runN, int eventN);
 	void retreiveRandomFromString(string data);
 
+	static const int HEADER_TAG=10;
+	static const int HEADER_NUM_RUNNO=2;
+	static const int HEADER_NUM_EVN=3;
+	static const int HEADER_NUM_DATA=6;
+
+
 public:
 	void BeginOfEventAction(const G4Event*);            ///< Routine at the start of each event
 	void EndOfEventAction(const G4Event*);              ///< Routine at the end of each event

@@ -23,6 +23,11 @@ using namespace CLHEP;
 #include "TFile.h"
 #include "TTree.h"
 
+//EVIO
+#include "evioBankUtil.h"
+#include "evioUtil.hxx"
+#include "evioFileChannel.hxx"
+
 // return original track id of a vector of tid
 vector<int> MEventAction::vector_otids(vector<int> tids) {
 	vector<int> otids;
@@ -758,6 +763,38 @@ void MEventAction::retrieveRandomFromRoot(string file, int runN, int eventN) {
 }
 
 void MEventAction::retrieveRandomFromEvio(string file, int runN, int eventN) {
+
+	evioFileChannel *chan = new evioFileChannel(file.c_str(), "r", 3000000);
+	chan->open();
+	int runN_file, eventN_file;
+	string data;
+	while (chan->read()) {
+		evioDOMTree *EDT = new evioDOMTree(chan);
+		evio::evioDOMNodeListP fullList = EDT->getNodeList();
+		evio::evioDOMNodeList::const_iterator iter;
+		for (iter = fullList->begin(); iter != fullList->end(); iter++) {
+			if (((*iter)->tag == HEADER_TAG) && ((*iter)->num == HEADER_NUM_RUNNO)) {
+				const evio::evioDOMLeafNode<long> *leaf = static_cast<const evio::evioDOMLeafNode<long>*>(*iter);
+				runN_file = leaf->data[0];
+			} else if (((*iter)->tag == HEADER_TAG) && ((*iter)->num == HEADER_NUM_EVN)) {
+				const evio::evioDOMLeafNode<long> *leaf = static_cast<const evio::evioDOMLeafNode<long>*>(*iter);
+				eventN_file = leaf->data[0];
+			} else if (((*iter)->tag == HEADER_TAG) && ((*iter)->num == HEADER_NUM_DATA)) {
+				const evio::evioDOMLeafNode<string> *leaf = static_cast<const evio::evioDOMLeafNode<string>*>(*iter);
+				data = leaf->data[0];
+			}
+		}
+		if ((runN_file == runN) && (eventN_file == eventN)) {
+			retreiveRandomFromString(data);
+			delete EDT;
+			delete chan;
+			return;
+		}
+		delete EDT;
+	}
+
+	cout << "MPrimaryGeneratorAction::retrieveRandomFromEvio() runN and eventN not found " << runN << " " << eventN << endl;
+	delete chan;
 
 }
 
