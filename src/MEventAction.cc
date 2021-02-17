@@ -16,7 +16,12 @@ using namespace std;
 
 // CLHEP units
 #include "CLHEP/Units/PhysicalConstants.h"
+#include "CLHEP/Random/engineIDulong.h"
 using namespace CLHEP;
+
+//ROOT headers
+#include "TFile.h"
+#include "TTree.h"
 
 // return original track id of a vector of tid
 vector<int> MEventAction::vector_otids(vector<int> tids) {
@@ -96,7 +101,9 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	RFSETUP = replaceCharInStringWithChars(gemcOpt.optMap["RFSETUP"].args, ",", "  ");
 	fastMCMode = gemcOpt.optMap["FASTMCMODE"].arg;  // fast mc = 2 will increase prodThreshold and maxStep to 5m
 
-	// fastMC mode will set SAVE_ALL_MOTHERS to 1
+	if (((string) gemcOpt.optMap["RETRIEVE_RANDOM"].args) != "no") do_RETRIEVE_RANDOM = true;
+
+	// fastMC mode willset SAVE_ALL_MOTHERS to 1
 	// a bit cluncky for now
 	if (fastMCMode > 0) SAVE_ALL_MOTHERS = 1;
 
@@ -119,7 +126,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	Tprompt_MIN = 0;
 	Tprompt_MAX = 100 * ms;
 
-	if (((string)gemcOpt.optMap["JPOS_TRG"].args) != "no") {
+	if (((string) gemcOpt.optMap["JPOS_TRG"].args) != "no") {
 		vector<string> cvalues = get_info(gemcOpt.optMap["JPOS_TRG"].args, string(",\""));
 		if (cvalues.size() != 5) {
 			cout << "ERR: JPOS_TRG must be 5 numbers, separated with comma: SD_name,Eprompt_MIN(with_unit),Eprompt_MAX(with_unit),Tprompt_min(with_unit),Tprompt_max(with_unit)";
@@ -144,6 +151,9 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 		}
 	}
 
+	do_SAVE_RANDOM = false;
+	if (gemcOpt.optMap["SAVE_RANDOM"].arg != 0) do_SAVE_RANDOM = true;
+
 }
 
 MEventAction::~MEventAction() {
@@ -161,6 +171,30 @@ void MEventAction::BeginOfEventAction(const G4Event *evt) {
 
 	rw.getRunNumber(evtN);
 	bgMap.clear();
+
+	if (do_RETRIEVE_RANDOM) {
+		retrieveRandom();
+	}
+
+	header.clear();
+	if (do_SAVE_RANDOM) {
+		HepRandomEngine *rndm = CLHEP::HepRandom::getTheEngine();
+		CLHEP::MTwistEngine *rndm_engine_mtwist = NULL;
+		rndm_engine_mtwist = dynamic_cast<CLHEP::MTwistEngine*>(rndm);
+		if (rndm_engine_mtwist != NULL) {
+			std::vector<unsigned long> v = rndm_engine_mtwist->put(); //626 entries: engineIDulong<MTwistEngine>(), then the 624 numbers in array mt, then the count624 variable
+			header["userVarUL0000 MTwistEngine"] = 1;
+			header["userVarUL0001"] = CLHEP::HepRandom::getTheSeed();
+			for (unsigned i = 0; i < v.size(); i++) {
+				string tmp = "userVarUL";
+				if (i < 8) tmp += "000";
+				else if (i < 98) tmp += "00";
+				else if (i < 998) tmp += "0";
+				tmp += to_string(i + 2);
+				header[tmp] = v[i];
+			}
+		}
+	}
 
 	if (evtN % Modulo == 0) {
 		cout << hd_msg << " Begin of event " << evtN << "  Run Number: " << rw.runNo;
@@ -200,12 +234,13 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 
 	if (do_JPOS_TRG) {
 		if (VERB > 3) {
-			cout << "EndOfEventAction " << evtN << "Eprompt: " << Eprompt/GeV << " GeV "<< endl;
+			cout << "EndOfEventAction " << evtN << "Eprompt: " << Eprompt / GeV << " GeV " << endl;
 		}
-		if ((Eprompt<Eprompt_MIN)||(Eprompt>Eprompt_MAX)){
+		if ((Eprompt < Eprompt_MIN) || (Eprompt > Eprompt_MAX)) {
 			if (VERB > 3) {
-				cout<<" DO NOT SAVE"<<endl;
+				cout << " DO NOT SAVE" << endl;
 			}
+			evtN++;
 			return;
 		}
 	}
@@ -222,9 +257,9 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 		for (int h = 0; h < nhits; h++) {
 			vector<int> tids = (*MHC)[h]->GetTIds();
 
-			for (unsigned int t = 0; t < tids.size(); t++)
+			for (unsigned int t = 0; t < tids.size(); t++) {
 				track_db.insert(tids[t]);
-
+			}
 			if (SAVE_ALL_MOTHERS > 1) {
 				vector<int> pids = (*MHC)[h]->GetPIDs();
 				// getting the position of the hit, not vertex of track
@@ -233,8 +268,9 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 		vector<double> tims = (*MHC)[h]->GetTime();
 		// only put the first step of a particular track
 		// (don't fill if track exist already)
-		for (unsigned int t = 0; t < tids.size(); t++)
+		for (unsigned int t = 0; t < tids.size(); t++) {
 			if (bgMap.find(tids[t]) == bgMap.end()) bgMap[tids[t]] = BGParts(pids[t], tims[t], vtxs[t], mmts[t]);
+		}
 	}
 }
 }
@@ -341,25 +377,16 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 
 	// Header Bank contains event number
 	// Need to change this to read DB header bank
-	map<string, double> header;
 	header["runNo"] = rw.runNo;
 	header["evn"] = evtN;
 	header["evn_type"] = -1;  // physics event. Negative is MonteCarlo event
 	header["beamPol"] = gen_action->getBeamPol();
 
-	// user header should be in a different tag than the normal header
-	// for now, we're ok
-	for (unsigned i = 0; i < gen_action->headerUserDefined.size(); i++) {
-		string tmp = "user var " + stringify((int) i + 1);
-		header[tmp] = gen_action->headerUserDefined[i];
-	}
-
 	// write event header bank
 	processOutputFactory->writeHeader(outContainer, header, getBankFromMap("header", banksMap));
 
-	// user header should be in a different tag than the normal header
-	// for now, we're ok
-	// assuming 100 user vars max
+	// write event header bank
+	//(A.C. this is what is used by BDX for event weight, and in general to store LUND header!)
 	map<string, double> userHeader;
 	for (unsigned i = 0; i < gen_action->headerUserDefined.size(); i++) {
 		string tmp = "userVar";
@@ -370,8 +397,6 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 
 		userHeader[tmp] = gen_action->headerUserDefined[i];
 	}
-
-	// write event header bank
 	processOutputFactory->writeUserInfoseHeader(outContainer, userHeader);
 
 	// write RF bank if present
@@ -671,5 +696,109 @@ void MEventAction::saveBGPartsToLund() {
 	for (map<int, BGParts>::iterator it = bgMap.begin(); it != bgMap.end(); it++)
 		*lundOutput << i++ << "\t0\t1\t" << it->second.pid << "\t0\t" << it->first << "\t" << it->second.p.x() / GeV << "\t" << it->second.p.y() / GeV << "\t" << it->second.p.z() / GeV << "\t" << it->second.time << "\t0\t" << it->second.v.x() / cm << "\t" << it->second.v.y() / cm
 				<< "\t" << it->second.v.z() / cm << endl;
+}
+
+void MEventAction::retrieveRandom() {
+	vector<string> cvalues = get_info(gemcOpt.optMap["RETRIEVE_RANDOM"].args, string(",\""));
+	if (cvalues.size() != 3) {
+		cout << "ERR: RETRIEVE_RANDOM must be 3 value, separated with comma: file(.root or .evio),runNumber,eventNumber";
+		cout << "endl";
+		exit(1);
+	}
+
+	string file = cvalues[0];
+	int runN = atoi(cvalues[1].c_str());
+	int eventN = atoi(cvalues[2].c_str());
+
+	bool doRoot = false;
+	bool doEvio = false;
+
+	if (file.find(".root") != string::npos) {
+		cout << "MPrimaryGeneratorAction::retrieveRandom() ROOT FILE: " << file << endl;
+		doRoot = true;
+	} else if (file.find(".evio") != string::npos) {
+		cout << "MPrimaryGeneratorAction::retrieveRandom() EVIO FILE: " << file << endl;
+		doEvio = true;
+	} else {
+		cout << "MPrimaryGeneratorAction::retrieveRandom() FILE FORMAT NOT RECOGNIZED: " << file << endl;
+		exit(1);
+	}
+
+	if (doRoot) retrieveRandomFromRoot(file, runN, eventN);
+	else if (doEvio) retrieveRandomFromEvio(file, runN, eventN);
+}
+
+void MEventAction::retrieveRandomFromRoot(string file, int runN, int eventN) {
+	TFile *f = new TFile(file.c_str());
+	TTree *t = (TTree*) f->Get("header");
+	if (t != NULL) {
+		vector<string> *string_tree = 0;
+		vector<double> *runN_tree = 0;
+		vector<double> *eventN_tree = 0;
+
+		t->SetBranchAddress("runNo", &runN_tree);
+		t->SetBranchAddress("evn", &eventN_tree);
+		t->SetBranchAddress("user", &string_tree);
+		for (int ii = 0; ii < t->GetEntries(); ii++) {
+			t->GetEntry(ii);
+			if (((int) ((*runN_tree)[0]) == runN) && ((int) ((*eventN_tree)[0]) == eventN)) {
+				cout << "MPrimaryGeneratorAction::retrieveRandomFromRoot() found: " << runN << " " << eventN << " at pos: " << ii << endl;
+				retreiveRandomFromString((*string_tree)[0]);
+				delete f;
+				return;
+			}
+		}
+		cout << "MPrimaryGeneratorAction::retrieveRandomFromRoot() runN and eventN not found " << runN << " " << eventN << endl;
+		delete f;
+		return;
+	}
+
+	delete f;
+	return;
+}
+
+void MEventAction::retrieveRandomFromEvio(string file, int runN, int eventN) {
+
+}
+
+void MEventAction::retreiveRandomFromString(string data) {
+	cout << "MPrimaryGeneratorAction:retreiveRandomFromString " << endl;
+
+	/*A.C. according to the code in MEventAction.cc
+	 the string is organized as:
+	 userVarUL0000 TYPE_OF_RANDOM_NUMBER_GENERATOR 1
+	 userVarUL0001 data specific to the random_number_generator
+	 userVarUL0002
+	 ...
+	 */
+	istringstream strm(data);
+	string user, type;
+	int tmpOne;
+	strm >> user >> type >> tmpOne;
+
+	if (type == "MTwistEngine") {
+		cout << "MPrimaryGeneratorAction:retreiveRandomFromString MTwistEngine " << type << " " << engineIDulong<MTwistEngine>() << endl;
+
+		HepRandomEngine *rndm = CLHEP::HepRandom::getTheEngine();
+		CLHEP::MTwistEngine *rndm_engine_mtwist = NULL;
+		rndm_engine_mtwist = dynamic_cast<CLHEP::MTwistEngine*>(rndm);
+		if (rndm_engine_mtwist == NULL) {
+			cout << " The current engine is NOT MTwistEngine " << endl;
+			return;
+		} else {
+			unsigned long seed;
+			unsigned long udata;
+			strm >> user >> seed;
+			std::vector<unsigned long> data;
+			for (int ii = 0; ii < 626; ii++) {
+				strm >> user >> udata;
+				data.push_back(udata);
+			}
+			CLHEP::HepRandom::setTheSeed(seed);
+			rndm_engine_mtwist->get(data);
+		}
+	} else {
+		cout << "MPrimaryGeneratorAction:retreiveRandomFromString TYPE NOT RECOGNIZED " << type << endl;
+	}
 }
 

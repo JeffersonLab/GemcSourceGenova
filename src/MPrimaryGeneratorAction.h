@@ -162,6 +162,7 @@ private:
 	double TBUNCH2;                       ///< Time Between Bunches
 	double lumi2Flat;                     ///< if this is set to 1, spread flat in theta, not cos(theta)
 
+
 	G4ParticleGun* particleGun;
 	void setBeam();
 

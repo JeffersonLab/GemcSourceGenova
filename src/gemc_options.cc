@@ -567,7 +567,6 @@ void goptions::setGoptions() {
 	optMap["TSAMPLING"].type = 1;
 	optMap["TSAMPLING"].ctgr = "output";
 
-
 	//JPOS_TRG
 	optMap["JPOS_TRG"].args = "no";
 	optMap["JPOS_TRG"].help = "Activates JPOS_TRG mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
@@ -755,6 +754,43 @@ void goptions::setGoptions() {
 	optMap["DF"].type = 1;
 	optMap["DF"].ctgr = "general";
 	optMap["DF"].repe = 1;
+
+	// Random number saving - retreiving
+
+	optMap["SAVE_RANDOM"].arg = 0;
+	optMap["SAVE_RANDOM"].help = "Save random number state in output file, to repeat the event";
+	optMap["SAVE_RANDOM"].name = "Save Random";
+	optMap["SAVE_RANDOM"].type = 0;
+	optMap["SAVE_RANDOM"].ctgr = "generator";
+
+
+	optMap["RETRIEVE_RANDOM"].args = "no";
+	optMap["RETRIEVE_RANDOM"].help = "Get back random number state from a file (evio or root from evio2root), and repeat the event\n";
+	optMap["RETRIEVE_RANDOM"].help += "example: -RETRIEVE_RANDOM=\"file.evio,RUN_NUMBER,EVNT_NUMBER\";";
+	optMap["RETRIEVE_RANDOM"].help += "example: -RETRIEVE_RANDOM=\"file.root,RUN_NUMBER,EVNT_NUMBER\";";
+	optMap["RETRIEVE_RANDOM"].name = "Retrieve Random";
+	optMap["RETRIEVE_RANDOM"].type = 1;
+	optMap["RETRIEVE_RANDOM"].ctgr = "generator";
+
+
+/*	optMap["MERGE_LUND_BG"].args = "no";
+	optMap["MERGE_LUND_BG"].help = "LUND Input file to merge background events\n";
+	optMap["MERGE_LUND_BG"].help += "      example: -MERGE_LUND_BG=\"background.dat\" \n";
+	optMap["MERGE_LUND_BG"].name = "LUND Input file to merge background events";
+	optMap["MERGE_LUND_BG"].type = 1;
+	optMap["MERGE_LUND_BG"].ctgr = "generator";
+
+	optMap["NGENP"].arg = 10;
+	optMap["NGENP"].help = "Max Number of Generated Particles to save in the Output.";
+	optMap["NGENP"].name = "Max Number of Generated Particles to save in the Output";
+	optMap["NGENP"].type = 0;
+	optMap["NGENP"].ctgr = "generator";
+
+	optMap["STEER_BEAM"].arg = 0;
+	optMap["STEER_BEAM"].type = 0;
+	optMap["STEER_BEAM"].ctgr = "generator";
+	optMap["STEER_BEAM"].name = "STEER_BEAM";
+	optMap["STEER_BEAM"].help = "Steer the beam, and translate the vertex, of an StdHep file by the amount specified in Beam_P, Beam_V, Spread_V \n";*/
 
 }
 
