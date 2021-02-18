@@ -452,6 +452,8 @@ void PhysicsList::ConstructProcess()
 
 	const G4ParticleDefinition* particle = G4Gamma::Gamma();
 	G4ProcessManager* pmanager = particle->GetProcessManager();
-	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
+	G4GammaConversionToMuons* GCTM = new G4GammaConversionToMuons;
+	GCTM -> SetCrossSecFactor(1);
+	pmanager->AddDiscreteProcess(GCTM);
 	}
 }

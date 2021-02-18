@@ -57,7 +57,7 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
 	if (evt_action->do_JPOS_TRG) {
 		if (aStep->GetPreStepPoint()->GetSensitiveDetector() != 0) {
 			G4VSensitiveDetector *SD = aStep->GetPreStepPoint()->GetSensitiveDetector();
-			if (SD->GetName() == evt_action->SDprompt) {
+			  if (((string)SD->GetName()) == evt_action->SDprompt) {
 				if ((aStep->GetPreStepPoint()->GetGlobalTime() > evt_action->Tprompt_MIN) && (aStep->GetPreStepPoint()->GetGlobalTime() < evt_action->Tprompt_MAX)) {
 					evt_action->Eprompt += aStep->GetTotalEnergyDeposit();
 				}
