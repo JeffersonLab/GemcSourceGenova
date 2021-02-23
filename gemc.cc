@@ -131,6 +131,8 @@ int main( int argc, char **argv )
 	
 	// random seed initialization
 	CLHEP::HepRandom::setTheEngine(new CLHEP::MTwistEngine);
+//	CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
+
 	G4int seed;
 	
 	if(gemcOpt.optMap["RANDOM"].args=="TIME")
