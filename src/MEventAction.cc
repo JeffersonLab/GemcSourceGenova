@@ -755,9 +755,11 @@ void MEventAction::retrieveRandomFromRoot(string file, int runN, int eventN) {
 		}
 		cout << "MPrimaryGeneratorAction::retrieveRandomFromRoot() runN and eventN not found " << runN << " " << eventN << endl;
 		delete f;
+		exit(1);
 		return;
 	}
-
+	cout << "MPrimaryGeneratorAction::retrieveRandomFromRoot() runN and eventN not found " << runN << " " << eventN << endl;
+	exit(1);
 	delete f;
 	return;
 }
@@ -794,6 +796,7 @@ void MEventAction::retrieveRandomFromEvio(string file, int runN, int eventN) {
 	}
 
 	cout << "MPrimaryGeneratorAction::retrieveRandomFromEvio() runN and eventN not found " << runN << " " << eventN << endl;
+	exit(1);
 	delete chan;
 
 }
