@@ -20,7 +20,10 @@ class txt_output : public outputFactory
 		static outputFactory *createOutput() {return new txt_output;}
 
 	// record the simulation conditions on the file
-	void recordSimConditions(outputContainer*, map<string, string>);
+	virtual void recordSimConditions(outputContainer*, map<string, string>);
+
+	// record the simulation conditions on the file at the end of the simulation
+	virtual void recordSimEndConditions(outputContainer*,int N, gBank bank);
 
 	// write header
 	void writeHeader(outputContainer*, map<string, double>, gBank);
