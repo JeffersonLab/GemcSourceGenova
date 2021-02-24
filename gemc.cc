@@ -371,6 +371,7 @@ int main(int argc, char **argv) {
 
 	if (outContainer.outType != "no") {
 		cout<<"WRITE LAST SPECIAL EVENT"<<endl;
+		nEventsToProcess=gemcOpt.optMap["N"].arg;
 		outputFactory *processOutputFactory = getOutputFactory(&outputFactoryMap, outContainer.outType);
 		processOutputFactory->recordSimEndConditions(&outContainer,nEventsToProcess,getBankFromMap("header",&banksMap));
 		processOutputFactory->writeEvent(&outContainer);
