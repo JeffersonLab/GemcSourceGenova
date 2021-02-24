@@ -1,7 +1,7 @@
 // gemc headers
 #include "evio_output.h"
 #include "utils.h"
-
+#include "gbank.h"
 // C++ headers
 #include <fstream>
 #include <sstream>
@@ -12,6 +12,7 @@ using namespace CLHEP;
 
 // evio
 #include "evioBankUtil.h"
+
 
 #define MAXEVIOBUF 10000000
 static unsigned int buf[MAXEVIOBUF];
@@ -32,6 +33,35 @@ void evio_output::recordSimConditions(outputContainer *output, map<string, strin
 
 	output->pchan->write(*conditionsBank);
 	delete conditionsBank;
+}
+
+// record the simulation conditions at the end
+void evio_output::recordSimEndConditions(outputContainer *output,int N,gBank bank) {
+	event = new evioDOMTree(1, 0);
+
+	evioDOMNodeP headerBank = evioDOMNode::createEvioDOMNode(HEADER_BANK_TAG, 0);
+
+	// timestamp
+	string time = timeStamp();
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("time"), "s", time);
+
+	//runNo to 0
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("runNo"), "i", 0);
+
+	//evn to N
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("evn"), "i",N);
+
+	//evn_type to -2
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("evn_type"), "i",-2);
+
+	//beamPol to 0
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("beamPol"), "d",0.);
+
+	//user
+	string ustr = "END_EVENT";
+	*headerBank << addVariable(HEADER_BANK_TAG, bank.getVarId("user"), "s",ustr);
+
+	*event << headerBank;
 }
 
 // instantiates the DOM tree

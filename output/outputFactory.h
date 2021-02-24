@@ -231,6 +231,9 @@ public:
 	// record the simulation conditions on the file
 	virtual void recordSimConditions(outputContainer*, map<string, string>) = 0;
 
+	// record the simulation conditions on the file AT THE END of the simulation
+	virtual void recordSimEndConditions(outputContainer*,int N,gBank) = 0;
+
 	// write event header
 	virtual void writeHeader(outputContainer*, map<string, double>, gBank)  = 0;
 	// write user infos header

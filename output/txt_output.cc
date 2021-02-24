@@ -15,11 +15,20 @@ using namespace CLHEP;
 void txt_output :: recordSimConditions(outputContainer* output, map<string, string> simcons)
 {
 	ofstream *txtout = output->txtoutput ;
-	
+
 	*txtout << "   Simulation Conditions, TAG " << SIMULATION_CONDITIONS_BANK_TAG << ":" << endl;
-	
+
 	for(map<string, string>::iterator it = simcons.begin(); it != simcons.end(); it++)
 		*txtout << "   > " << it->first << " " << it->second << endl;
+}
+
+// record the simulation conditions
+// the format is a string for each variable
+void txt_output :: recordSimEndConditions(outputContainer* output, int N, gBank bank)
+{
+	ofstream *txtout = output->txtoutput ;
+	*txtout << "   Simulation Conditions, TAG " << SIMULATION_CONDITIONS_BANK_TAG << ":" << endl;
+	*txtout << "   > " <<"N: "<<N<<endl;
 }
 
 
