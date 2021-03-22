@@ -106,6 +106,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	RFSETUP = replaceCharInStringWithChars(gemcOpt.optMap["RFSETUP"].args, ",", "  ");
 	fastMCMode = gemcOpt.optMap["FASTMCMODE"].arg;  // fast mc = 2 will increase prodThreshold and maxStep to 5m
 
+	do_RETRIEVE_RANDOM=false;
 	if (((string) gemcOpt.optMap["RETRIEVE_RANDOM"].args) != "no") do_RETRIEVE_RANDOM = true;
 
 	// fastMC mode willset SAVE_ALL_MOTHERS to 1
@@ -152,6 +153,40 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 			cout << "Eprompt_MAX = " << Eprompt_MAX / GeV << " GeV " << endl;
 			cout << "Tprompt_MIN = " << Tprompt_MIN / ns << " ns " << endl;
 			cout << "Tprompt_MAX = " << Tprompt_MAX / ns << " ns " << endl;
+
+		}
+	}
+
+	//These are for JPOS_2 trigger
+	do_JPOS_TRG_2 = false;
+	Eprompt_2 = 0;
+	SDprompt_2 = "";
+	Eprompt_MIN_2 = 0;
+	Eprompt_MAX_2 = 100 * TeV;
+	Tprompt_MIN_2 = 0;
+	Tprompt_MAX_2 = 100 * ms;
+
+	if (((string) gemcOpt.optMap["JPOS_TRG_2"].args) != "no") {
+		vector<string> cvalues = get_info(gemcOpt.optMap["JPOS_TRG_2"].args, string(",\""));
+		if (cvalues.size() != 5) {
+			cout << "ERR: JPOS_TRG_2 must be 5 numbers, separated with comma: SD_name,Eprompt_MIN(with_unit),Eprompt_MAX(with_unit),Tprompt_min(with_unit),Tprompt_max(with_unit)";
+			cout << "endl";
+			exit(1);
+		}
+		do_JPOS_TRG_2 = true;
+		SDprompt_2 = cvalues[0];
+		Eprompt_MIN_2 = get_number(cvalues[1]);
+		Eprompt_MAX_2 = get_number(cvalues[2]);
+		Tprompt_MIN_2 = get_number(cvalues[3]);
+		Tprompt_MAX_2 = get_number(cvalues[4]);
+
+		if (VERB > 3) {
+			cout << "MEventAction JPOS_TRG_2 settings:" << endl;
+			cout << "SDprompt = " << SDprompt_2 << endl;
+			cout << "Eprompt_MIN = " << Eprompt_MIN_2 / GeV << " GeV " << endl;
+			cout << "Eprompt_MAX = " << Eprompt_MAX_2 / GeV << " GeV " << endl;
+			cout << "Tprompt_MIN = " << Tprompt_MIN_2 / ns << " ns " << endl;
+			cout << "Tprompt_MAX = " << Tprompt_MAX_2 / ns << " ns " << endl;
 
 		}
 	}
@@ -212,6 +247,7 @@ void MEventAction::BeginOfEventAction(const G4Event *evt) {
 
 	//JPOS_CRS part
 	Eprompt = 0;
+	Eprompt_2 = 0;
 
 }
 
@@ -237,11 +273,24 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 
 	if (evtN % Modulo == 0) cout << hd_msg << " Starting Event Action Routine " << evtN << "  Run Number: " << rw.runNo << endl;
 
-	if (do_JPOS_TRG) {
+	if (do_JPOS_TRG || do_JPOS_TRG_2) {
+		bool saveEvent = true;
 		if (VERB > 3) {
-			cout << "EndOfEventAction " << evtN << "Eprompt: " << Eprompt / GeV << " GeV " << endl;
+			cout << "EndOfEventAction " << evtN << endl;
+			cout << "Eprompt JPOS_TRG: " << Eprompt / GeV << " GeV " << endl;
+			cout << "Eprompt JPOS_TRG_2: " << Eprompt_2 / GeV << " GeV " << endl;
 		}
-		if ((Eprompt < Eprompt_MIN) || (Eprompt > Eprompt_MAX)) {
+		if (do_JPOS_TRG) {
+			if ((Eprompt < Eprompt_MIN) || (Eprompt > Eprompt_MAX)) {
+				saveEvent = false;
+			}
+		}
+		if (do_JPOS_TRG_2) {
+			if ((Eprompt_2 < Eprompt_MIN_2) || (Eprompt_2 > Eprompt_MAX_2)) {
+				saveEvent = false;
+			}
+		}
+		if (!saveEvent) {
 			if (VERB > 3) {
 				cout << " DO NOT SAVE" << endl;
 			}

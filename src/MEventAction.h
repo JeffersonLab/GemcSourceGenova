@@ -157,6 +157,13 @@ public:
 	double Eprompt_MIN, Eprompt_MAX;
 	double Tprompt_MIN, Tprompt_MAX;
 
+	//A.C. this part is related to JPOS_2 trigger, where we want to save in the output only
+	bool do_JPOS_TRG_2;
+	string SDprompt_2;
+	double Eprompt_2;
+	double Eprompt_MIN_2, Eprompt_MAX_2;
+	double Tprompt_MIN_2, Tprompt_MAX_2;
+
 	//A.C. random numbers
 	bool do_SAVE_RANDOM;
 

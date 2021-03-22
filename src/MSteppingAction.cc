@@ -65,6 +65,22 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
 		}
 	}
 
+	//JPOS_CRS part. If a step is at the boundary of two volumes A(exiting from) and B (entering into):
+	//The PRE_STEP_POINT is in A
+	//The POST_STEP_POINT is in B
+	//Here I check all particles EXITING from A and ENTERING B, by the name of the sensitive detector of the exit-from volum
+	if (evt_action->do_JPOS_TRG_2) {
+		if (aStep->GetPreStepPoint()->GetPhysicalVolume() != aStep->GetPostStepPoint()->GetPhysicalVolume()) {
+			if (aStep->GetPreStepPoint()->GetSensitiveDetector() != 0) {
+				G4VSensitiveDetector *SD = aStep->GetPreStepPoint()->GetSensitiveDetector();
+				if (SD->GetName() == evt_action->SDprompt_2) {
+					if ((aStep->GetPreStepPoint()->GetGlobalTime() >= evt_action->Tprompt_MIN) && (aStep->GetPreStepPoint()->GetGlobalTime() <= evt_action->Tprompt_MAX) && (track->GetParentID()!=0)) {
+						evt_action->Eprompt_2 += track->GetKineticEnergy();
+					}
+				}
+			}
+		}
+	}
 
 //	// checking if a step is stuck in the same position
 //	// for more than 10 steps
