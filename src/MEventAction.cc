@@ -106,6 +106,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 	RFSETUP = replaceCharInStringWithChars(gemcOpt.optMap["RFSETUP"].args, ",", "  ");
 	fastMCMode = gemcOpt.optMap["FASTMCMODE"].arg;  // fast mc = 2 will increase prodThreshold and maxStep to 5m
 
+	do_RETRIEVE_RANDOM = false;
 	if (((string) gemcOpt.optMap["RETRIEVE_RANDOM"].args) != "no") do_RETRIEVE_RANDOM = true;
 
 	// fastMC mode willset SAVE_ALL_MOTHERS to 1
