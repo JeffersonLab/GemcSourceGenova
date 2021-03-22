@@ -570,8 +570,16 @@ void goptions::setGoptions() {
 	//JPOS_TRG
 	optMap["JPOS_TRG"].args = "no";
 	optMap["JPOS_TRG"].help = "Activates JPOS_TRG mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
+	optMap["JPOS_TRG"].help +="Here, min_E and max_E are the limits for the TOTAL energy deposited by all hits by all particles in all detectors with given SD name";
 	optMap["JPOS_TRG"].type = 1;
 	optMap["JPOS_TRG"].ctgr = "output";
+
+	//JPOS_TRG
+	optMap["JPOS_TRG_2"].args = "no";
+	optMap["JPOS_TRG_2"].help = "Activates JPOS_TRG_2 mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
+	optMap["JPOS_TRG_2"].help +="Here, min_E and max_E are the limits for the TOTAL energy of all particles - excluding primaries- exiting from all the detectors with the given SD name";
+	optMap["JPOS_TRG_2"].type = 1;
+	optMap["JPOS_TRG_2"].ctgr = "output";
 
 	// Physics
 	optMap["PHYSICS"].args = "STD + FTFP_BERT";
@@ -763,7 +771,6 @@ void goptions::setGoptions() {
 	optMap["SAVE_RANDOM"].type = 0;
 	optMap["SAVE_RANDOM"].ctgr = "generator";
 
-
 	optMap["RETRIEVE_RANDOM"].args = "no";
 	optMap["RETRIEVE_RANDOM"].help = "Get back random number state from a file (evio or root from evio2root), and repeat the event\n";
 	optMap["RETRIEVE_RANDOM"].help += "example: -RETRIEVE_RANDOM=\"file.evio,RUN_NUMBER,EVNT_NUMBER\";";
@@ -772,25 +779,24 @@ void goptions::setGoptions() {
 	optMap["RETRIEVE_RANDOM"].type = 1;
 	optMap["RETRIEVE_RANDOM"].ctgr = "generator";
 
+	/*	optMap["MERGE_LUND_BG"].args = "no";
+	 optMap["MERGE_LUND_BG"].help = "LUND Input file to merge background events\n";
+	 optMap["MERGE_LUND_BG"].help += "      example: -MERGE_LUND_BG=\"background.dat\" \n";
+	 optMap["MERGE_LUND_BG"].name = "LUND Input file to merge background events";
+	 optMap["MERGE_LUND_BG"].type = 1;
+	 optMap["MERGE_LUND_BG"].ctgr = "generator";
 
-/*	optMap["MERGE_LUND_BG"].args = "no";
-	optMap["MERGE_LUND_BG"].help = "LUND Input file to merge background events\n";
-	optMap["MERGE_LUND_BG"].help += "      example: -MERGE_LUND_BG=\"background.dat\" \n";
-	optMap["MERGE_LUND_BG"].name = "LUND Input file to merge background events";
-	optMap["MERGE_LUND_BG"].type = 1;
-	optMap["MERGE_LUND_BG"].ctgr = "generator";
+	 optMap["NGENP"].arg = 10;
+	 optMap["NGENP"].help = "Max Number of Generated Particles to save in the Output.";
+	 optMap["NGENP"].name = "Max Number of Generated Particles to save in the Output";
+	 optMap["NGENP"].type = 0;
+	 optMap["NGENP"].ctgr = "generator";
 
-	optMap["NGENP"].arg = 10;
-	optMap["NGENP"].help = "Max Number of Generated Particles to save in the Output.";
-	optMap["NGENP"].name = "Max Number of Generated Particles to save in the Output";
-	optMap["NGENP"].type = 0;
-	optMap["NGENP"].ctgr = "generator";
-
-	optMap["STEER_BEAM"].arg = 0;
-	optMap["STEER_BEAM"].type = 0;
-	optMap["STEER_BEAM"].ctgr = "generator";
-	optMap["STEER_BEAM"].name = "STEER_BEAM";
-	optMap["STEER_BEAM"].help = "Steer the beam, and translate the vertex, of an StdHep file by the amount specified in Beam_P, Beam_V, Spread_V \n";*/
+	 optMap["STEER_BEAM"].arg = 0;
+	 optMap["STEER_BEAM"].type = 0;
+	 optMap["STEER_BEAM"].ctgr = "generator";
+	 optMap["STEER_BEAM"].name = "STEER_BEAM";
+	 optMap["STEER_BEAM"].help = "Steer the beam, and translate the vertex, of an StdHep file by the amount specified in Beam_P, Beam_V, Spread_V \n";*/
 
 }
 
