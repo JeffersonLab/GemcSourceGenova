@@ -29,16 +29,13 @@ map<string, double> JPOS_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
   for (unsigned int s = 0; s < nsteps; s++) {
     Etot = Etot + Edep[s];
   }
-  
-  
-  //cout<<"Energy tot: "<<Etot<<endl;
-  
-  
-  dgtz["hitn"] = 0;
+
+ 
+  dgtz["hitn"] = hitn;
   dgtz["sector"] = sector;
   dgtz["xch"] = xch;
   dgtz["ych"] = ych;
-  dgtz["TotEnergyDep"] = Etot;
+  dgtz["Etot"] = Etot;
   
 
 
