@@ -191,6 +191,45 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 		}
 	}
 
+
+	//These are for JPOS_3 trigger (HCAL)
+	do_JPOS_TRG_3 = false;
+	SDprompt_2 = "";
+	Eprompt_MIN_3 = 0;
+	Eprompt_MAX_3 = 100 * TeV;
+	Tprompt_MIN_3 = 0;
+	Tprompt_MAX_3 = 100 * ms;
+	for (int ii=0;ii<6;ii++)Nprompt_bars_3_thr[ii]=9999;
+
+	if (((string) gemcOpt.optMap["JPOS_TRG_3"].args) != "no") {
+	        vector<string> cvalues = get_info(gemcOpt.optMap["JPOS_TRG_3"].args, string(",\""));
+	        if (cvalues.size() != 11) {
+	            cout << "ERR: JPOS_TRG_3 must be 11 numbers, separated with comma: SD_name,Eprompt_MIN(with_unit),Eprompt_MAX(with_unit),Tprompt_min(with_unit),Tprompt_max(with_unit),THR_SECT_1,THR_SECT_2,THR_SECT_3,THR_SECT_4,THR_SECT_5,THR_SECT_6";
+	            cout << "endl";
+	            exit(1);
+	        }
+	        do_JPOS_TRG_3 = true;
+	        SDprompt_3 = cvalues[0];
+	        Eprompt_MIN_3 = get_number(cvalues[1]);
+	        Eprompt_MAX_3 = get_number(cvalues[2]);
+	        Tprompt_MIN_3 = get_number(cvalues[3]);
+	        Tprompt_MAX_3 = get_number(cvalues[4]);
+	        for (int ii=0;ii<6;ii++)Nprompt_bars_3_thr[ii]= get_number(cvalues[5+ii]);
+
+
+	        if (VERB > 3) {
+	            cout << "MEventAction JPOS_TRG_3 settings:" << endl;
+	            cout << "SDprompt = " << SDprompt_3 << endl;
+	            cout << "Eprompt_MIN = " << Eprompt_MIN_3 / GeV << " GeV " << endl;
+	            cout << "Eprompt_MAX = " << Eprompt_MAX_3 / GeV << " GeV " << endl;
+	            cout << "Tprompt_MIN = " << Tprompt_MIN_3 / ns << " ns " << endl;
+	            cout << "Tprompt_MAX = " << Tprompt_MAX_3 / ns << " ns " << endl;
+	            cout << "Sector number of bars thr:"<<endl;
+	            for (int ii=0;ii<6;ii++) cout<<ii<<" "<<Nprompt_bars_3_thr[ii]<<endl;
+	        }
+	    }
+
+
 	do_SAVE_RANDOM = false;
 	if (gemcOpt.optMap["SAVE_RANDOM"].arg != 0) do_SAVE_RANDOM = true;
 
@@ -247,8 +286,8 @@ void MEventAction::BeginOfEventAction(const G4Event *evt) {
 
 	//JPOS_CRS part
 	Eprompt = 0;
-	Eprompt_2 = 0;
-
+    Eprompt_2 = 0;
+    for (int ii=0;ii<6;ii++)Nprompt_bars_3[ii]=0;
 }
 
 void MEventAction::EndOfEventAction(const G4Event *evt) {
@@ -273,7 +312,7 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 
 	if (evtN % Modulo == 0) cout << hd_msg << " Starting Event Action Routine " << evtN << "  Run Number: " << rw.runNo << endl;
 
-	if (do_JPOS_TRG || do_JPOS_TRG_2) {
+	if (do_JPOS_TRG || do_JPOS_TRG_2 || do_JPOS_TRG_3) {
 		bool saveEvent = true;
 		if (VERB > 3) {
 			cout << "EndOfEventAction " << evtN << endl;
@@ -290,6 +329,16 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
 				saveEvent = false;
 			}
 		}
+
+	    if (do_JPOS_TRG_3) {
+	        bool tmpFlag=true;
+	        for (int ii=0;ii<6;ii++){
+	            if (Nprompt_bars_3[ii]>Nprompt_bars_3_thr[ii]) tmpFlag=false;
+	        }
+	        if (tmpFlag==false){//if at least one of the 6 sectors has a number of bars ON greater than the THR do NOT save
+	            saveEvent=false;
+	        }
+	    }
 		if (!saveEvent) {
 			if (VERB > 3) {
 				cout << " DO NOT SAVE" << endl;

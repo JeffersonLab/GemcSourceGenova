@@ -164,6 +164,14 @@ public:
 	double Eprompt_MIN_2, Eprompt_MAX_2;
 	double Tprompt_MIN_2, Tprompt_MAX_2;
 
+	//A.C. this part is related to JPOS_3 trigger
+	bool do_JPOS_TRG_3;
+    string SDprompt_3;
+    double Tprompt_MIN_3, Tprompt_MAX_3;
+    double Eprompt_MIN_3, Eprompt_MAX_3;
+    int Nprompt_bars_3[6];
+    int Nprompt_bars_3_thr[6];
+
 	//A.C. random numbers
 	bool do_SAVE_RANDOM;
 

@@ -574,12 +574,19 @@ void goptions::setGoptions() {
 	optMap["JPOS_TRG"].type = 1;
 	optMap["JPOS_TRG"].ctgr = "output";
 
-	//JPOS_TRG
+	//JPOS_TRG_2
 	optMap["JPOS_TRG_2"].args = "no";
-	optMap["JPOS_TRG_2"].help = "Activates JPOS_TRG_2 mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
+	optMap["JPOS_TRG_2"].help = "Activates JPOS_TRG_2 mode: SD_name, min_E,max_E,min_T,max_T example: -JPOS_TRG_2=\"crs,10*MeV,100*MeV,0*ns,100*ns\"";
 	optMap["JPOS_TRG_2"].help +="Here, min_E and max_E are the limits for the TOTAL energy of all particles - excluding primaries- exiting from all the detectors with the given SD name";
 	optMap["JPOS_TRG_2"].type = 1;
 	optMap["JPOS_TRG_2"].ctgr = "output";
+
+	//JPOS_TRG_3
+    optMap["JPOS_TRG_3"].args = "no";
+    optMap["JPOS_TRG_3"].help = "Activates JPOS_TRG_3 mode: SD_name, min_E,max_E,min_T,max_T,6 numbers for the thresholds example: -JPOS_TRG_3=\"JPOS_HCAL,1*MeV,100*MeV,0*ns,100*ns,9999,9999,9999,9999,9999,10\"";
+    optMap["JPOS_TRG_3"].help +="Here, min_E and max_E are the limits for the TOTAL energy of all particles - excluding primaries- exiting from all the detectors with the given SD name";
+    optMap["JPOS_TRG_3"].type = 1;
+    optMap["JPOS_TRG_3"].ctgr = "output";
 
 	// Physics
 	optMap["PHYSICS"].args = "STD + FTFP_BERT";
