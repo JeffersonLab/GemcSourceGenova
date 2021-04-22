@@ -24,6 +24,9 @@
 #include "options.h"
 #include "MPrimaryGeneratorAction.h"
 
+#define kMaxSector 200
+#define kMaxChannel 30
+
 /// \class BGParts
 /// <b> BGParts: (background) Particles that produce hits </b>\n\n
 /// Contains:
@@ -169,8 +172,9 @@ public:
     string SDprompt_3;
     double Tprompt_MIN_3, Tprompt_MAX_3;
     double Eprompt_MIN_3, Eprompt_MAX_3;
-    int Nprompt_bars_3[6];
+    double Eprompt_bars_3[6][kMaxSector][kMaxChannel];
     int Nprompt_bars_3_thr[6];
+    int Nprompt_bars_3[6];
 
 	//A.C. random numbers
 	bool do_SAVE_RANDOM;

@@ -97,8 +97,8 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
                     double length = aStep->GetStepLength();
                     double eneB = ene / (1. + birks * ene / length);
 
-                    if ((eneB >= evt_action->Eprompt_MIN_3) && (eneB <= evt_action->Eprompt_MAX_3)) {
-
+                    //if ((eneB >= evt_action->Eprompt_MIN_3) && (eneB <= evt_action->Eprompt_MAX_3)) {
+                    if (eneB >= 0) {
                         //find sector and layer: the naming scheme is Sc_SA_LB_C, where "A" is the sector (1..6), B the layer, C the counter in the layer
                         string volName = aStep->GetPreStepPoint()->GetPhysicalVolume()->GetName();
                         stringstream input_stringstream(volName);
@@ -117,9 +117,7 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
                         int channel = atoi(str4.c_str());
 
                         //cout << volName << " " << sector << " " << layer << " " << channel << " " << ene << " " << eneB << endl;
-                        if (layer <= 48) {
-                            evt_action->Nprompt_bars_3[sector - 1]++;
-                        }
+                        evt_action->Eprompt_bars_3[sector - 1][layer - 1][channel - 1] += eneB;
                     }
                 }
             }
