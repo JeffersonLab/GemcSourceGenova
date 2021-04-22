@@ -60,7 +60,6 @@ map<string, double> JPOS_HCAL_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
     double Edep_B = BirksAttenuation(Edep[s], Dx[s], charge[s], birks_constant);
     EtotB += Edep_B;
-
     //cout<<Lpos[s].getX()<<endl;                 //posizione step relativa alla sbarretta
     Mx += Lpos[s].getX();
     //cout<<Lpos[s].getY()<<endl;

@@ -342,8 +342,11 @@ void MEventAction::EndOfEventAction(const G4Event *evt) {
             for (int ii = 0; ii < 6; ii++) {
                 Nprompt_bars_3[ii] = 0;
                 for (int jj = 0; jj < kMaxSector; jj++) {
-                    for (int kk = 0; kk <  kMaxChannel; kk++) {
-                        if ((Eprompt_bars_3[ii][jj][kk]>=Eprompt_MIN_3)&&(Eprompt_bars_3[ii][jj][kk]<=Eprompt_MAX_3)) Nprompt_bars_3[ii]+=1;
+                    for (int kk = 0; kk < kMaxChannel; kk++) {
+                        if ((Eprompt_bars_3[ii][jj][kk] >= Eprompt_MIN_3) && (Eprompt_bars_3[ii][jj][kk] <= Eprompt_MAX_3)) {
+                            Nprompt_bars_3[ii] += 1;
+                            if (VERB > 3) cout << "JPOS_TRG_3 sect: " << ii + 1 << " lay: " << jj + 1 << " ch: " << kk + 1 << " " << Eprompt_bars_3[ii][jj][kk] << endl;
+                        }
                     }
                 }
                 if (Nprompt_bars_3[ii] > Nprompt_bars_3_thr[ii]) tmpFlag = false;

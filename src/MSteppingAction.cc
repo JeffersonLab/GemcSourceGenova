@@ -92,10 +92,11 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
                 if ((aStep->GetPreStepPoint()->GetGlobalTime() > evt_action->Tprompt_MIN_3) && (aStep->GetPreStepPoint()->GetGlobalTime() < evt_action->Tprompt_MAX_3)) {
 
                     //compute the birks-corrected energy deposition
-                    double birks = aStep->GetPreStepPoint()->GetMaterial()->GetIonisation()->GetBirksConstant();
-                    double ene = aStep->GetTotalEnergyDeposit();
-                    double length = aStep->GetStepLength();
-                    double eneB = ene / (1. + birks * ene / length);
+                    auto birks = aStep->GetPreStepPoint()->GetMaterial()->GetIonisation()->GetBirksConstant();
+                    auto ene = aStep->GetTotalEnergyDeposit();
+                    auto length = aStep->GetStepLength();
+                    auto charge=aStep->GetTrack()->GetParticleDefinition()->GetPDGCharge();
+                    auto eneB = (charge==0? ene : ene / (1. + birks * ene / length));
 
                     //if ((eneB >= evt_action->Eprompt_MIN_3) && (eneB <= evt_action->Eprompt_MAX_3)) {
                     if (eneB >= 0) {
@@ -115,8 +116,6 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
                         int sector = atoi(str2.c_str()); //1..6
                         int layer = atoi(str3.c_str());  //from 1
                         int channel = atoi(str4.c_str());
-
-                        //cout << volName << " " << sector << " " << layer << " " << channel << " " << ene << " " << eneB << endl;
                         evt_action->Eprompt_bars_3[sector - 1][layer - 1][channel - 1] += eneB;
                     }
                 }
