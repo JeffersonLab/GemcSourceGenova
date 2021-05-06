@@ -82,6 +82,7 @@ vector<G4ThreeVector> vector_mvert(map<int, TInfos> tinfos, vector<int> tids) {
 
 MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 
+
     hitProcessMap = 0;
     gen_action = 0;
     outputFactoryMap = 0;
@@ -232,6 +233,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 
     do_SAVE_RANDOM = false;
     if (gemcOpt.optMap["SAVE_RANDOM"].arg != 0) do_SAVE_RANDOM = true;
+
 
 }
 

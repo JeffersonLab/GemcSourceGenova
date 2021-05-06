@@ -786,6 +786,26 @@ void goptions::setGoptions() {
 	optMap["RETRIEVE_RANDOM"].type = 1;
 	optMap["RETRIEVE_RANDOM"].ctgr = "generator";
 
+
+	// Dark Photon Model
+	optMap["DARK_PHOTON"].args = "no";
+	optMap["DARK_PHOTON"].help = "Dark Photon parameters: mass, spin*2, parity\n";
+	optMap["DARK_PHOTON"].help += "example: -DARK_PHOTON=\"200*MeV,2,-1\"";
+	optMap["DARK_PHOTON"].type = 1;
+	optMap["DARK_PHOTON"].ctgr = "dark_photon";
+
+	optMap["DARK_MATTER"].args = "no";
+	optMap["DARK_MATTER"].help = "Dark Matter parameters: mass, spin*2\n";
+	optMap["DARK_MATTER"].help += "example: -DARK_MATTER=\"200*MeV,1\"";
+	optMap["DARK_MATTER"].type = 1;
+	optMap["DARK_MATTER"].ctgr = "dark_photon";
+
+	optMap["DARK_COUPLINGS"].args = "no";
+	optMap["DARK_COUPLINGS"].help = "Dark photon couplings: eps, alphaD\n";
+	optMap["DARK_COUPLINGS"].help += "example: -DARK_COUPLINGS=\"0.001,0.5\"";
+	optMap["DARK_COUPLINGS"].type = 1;
+	optMap["DARK_COUPLINGS"].ctgr = "dark_photon";
+
 	/*	optMap["MERGE_LUND_BG"].args = "no";
 	 optMap["MERGE_LUND_BG"].help = "LUND Input file to merge background events\n";
 	 optMap["MERGE_LUND_BG"].help += "      example: -MERGE_LUND_BG=\"background.dat\" \n";

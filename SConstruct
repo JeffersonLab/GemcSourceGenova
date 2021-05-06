@@ -78,6 +78,9 @@ env.Library(source = sensi_sources, target = "lib/gsensitivity")
 # Physics
 env.Append(CPPPATH = 'physics')
 phys_sources = Split("""
+	physics/G4DarkMatter.cc
+	physics/G4DarkPhoton.cc
+	physics/G4DarkPhotonAnnihilationProduction.cc
 	physics/PhysicsList.cc
 	physics/PhysicsListMessenger.cc""")
 env.Library(source = phys_sources, target = "lib/gphysics")
