@@ -24,6 +24,9 @@
 #include "options.h"
 #include "MPrimaryGeneratorAction.h"
 
+#define kMaxSector 200
+#define kMaxChannel 30
+
 /// \class BGParts
 /// <b> BGParts: (background) Particles that produce hits </b>\n\n
 /// Contains:
@@ -156,6 +159,22 @@ public:
 	double Eprompt;
 	double Eprompt_MIN, Eprompt_MAX;
 	double Tprompt_MIN, Tprompt_MAX;
+
+	//A.C. this part is related to JPOS_2 trigger, where we want to save in the output only
+	bool do_JPOS_TRG_2;
+	string SDprompt_2;
+	double Eprompt_2;
+	double Eprompt_MIN_2, Eprompt_MAX_2;
+	double Tprompt_MIN_2, Tprompt_MAX_2;
+
+	//A.C. this part is related to JPOS_3 trigger
+	bool do_JPOS_TRG_3;
+    string SDprompt_3;
+    double Tprompt_MIN_3, Tprompt_MAX_3;
+    double Eprompt_MIN_3, Eprompt_MAX_3;
+    double Eprompt_bars_3[6][kMaxSector][kMaxChannel];
+    int Nprompt_bars_3_thr[6];
+    int Nprompt_bars_3[6];
 
 	//A.C. random numbers
 	bool do_SAVE_RANDOM;
