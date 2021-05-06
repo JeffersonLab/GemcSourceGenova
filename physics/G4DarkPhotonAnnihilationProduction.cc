@@ -137,8 +137,8 @@ G4double G4DarkPhotonAnnihilationProduction::ComputeCrossSectionPerAtom(G4double
 
 	CrossSection = CrossSection * K;
 
-	hc1->Fill(Ekin/GeV);
-	hc2->Fill(Ekin/GeV,CrossSection/(1./GeV)/(1./GeV));
+	//hc1->Fill(Ekin/GeV);
+	//hc2->Fill(Ekin/GeV,CrossSection/(1./GeV)/(1./GeV));
 
 
 
