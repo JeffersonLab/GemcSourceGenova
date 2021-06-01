@@ -111,7 +111,8 @@ hitp_sources = Split("""
 	hitprocess/bdx/crs_hitprocess.cc
 	hitprocess/eee/eee_veto_hitprocess.cc
 	hitprocess/JPOS/JPOS_crs_hitprocess.cc
-	hitprocess/JPOS/JPOS_HCAL_hitprocess.cc""")
+	hitprocess/JPOS/JPOS_HCAL_hitprocess.cc
+        hitprocess/poker/poker_crs_hitprocess.cc""")
 
 env.Library(source = hitp_sources, target = "lib/ghitprocess")
 

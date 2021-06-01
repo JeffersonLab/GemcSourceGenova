@@ -46,6 +46,8 @@
 #include "JPOS/JPOS_crs_hitprocess.h"
 #include "JPOS/JPOS_HCAL_hitprocess.h"
 
+//poker
+#include "poker/poker_crs_hitprocess.h"
 
 map<string, HitProcess_Factory> HitProcess_Map(string experiments) {
 
@@ -112,7 +114,10 @@ map<string, HitProcess_Factory> HitProcess_Map(string experiments) {
 		else if (EXP == "JPOS"){
 		  hitMap["JPOS_crs"]= &JPOS_crs_HitProcess::createHitClass;
 		  hitMap["JPOS_HCAL"]= &JPOS_HCAL_HitProcess::createHitClass;
-		}			
+		} else if (EXP == "poker"){
+		hitMap["poker_crs"]= &poker_crs_HitProcess::createHitClass;
+ 
+                }			
 
 	}
 
