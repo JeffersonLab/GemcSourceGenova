@@ -82,7 +82,6 @@ vector<G4ThreeVector> vector_mvert(map<int, TInfos> tinfos, vector<int> tids) {
 
 MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 
-
     hitProcessMap = 0;
     gen_action = 0;
     outputFactoryMap = 0;
@@ -234,7 +233,6 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
     do_SAVE_RANDOM = false;
     if (gemcOpt.optMap["SAVE_RANDOM"].arg != 0) do_SAVE_RANDOM = true;
 
-
 }
 
 MEventAction::~MEventAction() {
@@ -242,6 +240,7 @@ MEventAction::~MEventAction() {
 }
 
 void MEventAction::BeginOfEventAction(const G4Event *evt) {
+
     if (gen_action->isFileOpen() == false) {
         G4RunManager *runManager = G4RunManager::GetRunManager();
         ;
@@ -253,29 +252,16 @@ void MEventAction::BeginOfEventAction(const G4Event *evt) {
     rw.getRunNumber(evtN);
     bgMap.clear();
 
-    if (do_RETRIEVE_RANDOM) {
-        retrieveRandom();
-    }
+    //A.C. this part was moved to the MPrimaryGeneratorAction, since random numbers are already used there, and that function is called before
+    /* if (do_RETRIEVE_RANDOM) {
+     retrieveRandom();
+     }*/
 
-    header.clear();
-    if (do_SAVE_RANDOM) {
-        HepRandomEngine *rndm = CLHEP::HepRandom::getTheEngine();
-        CLHEP::MTwistEngine *rndm_engine_mtwist = NULL;
-        rndm_engine_mtwist = dynamic_cast<CLHEP::MTwistEngine*>(rndm);
-        if (rndm_engine_mtwist != NULL) {
-            std::vector<unsigned long> v = rndm_engine_mtwist->put(); //626 entries: engineIDulong<MTwistEngine>(), then the 624 numbers in array mt, then the count624 variable
-            header["userVarUL0000 MTwistEngine"] = 1;
-            header["userVarUL0001"] = CLHEP::HepRandom::getTheSeed();
-            for (unsigned i = 0; i < v.size(); i++) {
-                string tmp = "userVarUL";
-                if (i < 8) tmp += "000";
-                else if (i < 98) tmp += "00";
-                else if (i < 998) tmp += "0";
-                tmp += to_string(i + 2);
-                header[tmp] = v[i];
-            }
-        }
-    }
+   // header.clear();
+    //A.C. this part was moved to the MPrimaryGeneratorAction, since random numbers are already used there, and that function is called before
+  /*  if (do_SAVE_RANDOM) {
+      this->saveRandom();
+    }*/
 
     if (evtN % Modulo == 0) {
         cout << hd_msg << " Begin of event " << evtN << "  Run Number: " << rw.runNo;
@@ -817,6 +803,26 @@ void MEventAction::saveBGPartsToLund() {
     for (map<int, BGParts>::iterator it = bgMap.begin(); it != bgMap.end(); it++)
         *lundOutput << i++ << "\t0\t1\t" << it->second.pid << "\t0\t" << it->first << "\t" << it->second.p.x() / GeV << "\t" << it->second.p.y() / GeV << "\t" << it->second.p.z() / GeV << "\t" << it->second.time << "\t0\t" << it->second.v.x() / cm << "\t" << it->second.v.y() / cm
                 << "\t" << it->second.v.z() / cm << endl;
+}
+
+void MEventAction::saveRandom() {
+    header.clear();
+    HepRandomEngine *rndm = CLHEP::HepRandom::getTheEngine();
+    CLHEP::MTwistEngine *rndm_engine_mtwist = NULL;
+    rndm_engine_mtwist = dynamic_cast<CLHEP::MTwistEngine*>(rndm);
+    if (rndm_engine_mtwist != NULL) {
+        std::vector<unsigned long> v = rndm_engine_mtwist->put(); //626 entries: engineIDulong<MTwistEngine>(), then the 624 numbers in array mt, then the count624 variable
+        header["userVarUL0000 MTwistEngine"] = 1;
+        header["userVarUL0001"] = CLHEP::HepRandom::getTheSeed();
+        for (unsigned i = 0; i < v.size(); i++) {
+            string tmp = "userVarUL";
+            if (i < 8) tmp += "000";
+            else if (i < 98) tmp += "00";
+            else if (i < 998) tmp += "0";
+            tmp += to_string(i + 2);
+            header[tmp] = v[i];
+        }
+    }
 }
 
 void MEventAction::retrieveRandom() {

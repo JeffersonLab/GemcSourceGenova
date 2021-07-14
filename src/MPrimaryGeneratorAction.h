@@ -21,6 +21,8 @@ class TH3D;
 class TH2D;
 class TTree;
 
+class MEventAction;
+
 class userInforForParticle {
 public:
 	vector<double> infos;
@@ -29,7 +31,7 @@ public:
 // Class definition
 class MPrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction {
 public:
-	MPrimaryGeneratorAction(goptions*);
+	MPrimaryGeneratorAction(goptions*,MEventAction *evtAction);
 	~MPrimaryGeneratorAction();
 
 public:
@@ -173,6 +175,8 @@ private:
 	int Ntot;
 
 	void setParticleFromPars(int, int, int, int, double, double, double, double, double, double, G4Event* anEvent);
+
+	MEventAction* evtAction;
 
 };
 

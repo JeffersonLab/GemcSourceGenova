@@ -181,6 +181,8 @@ public:
 
 
 	bool do_RETRIEVE_RANDOM;
+
+	void saveRandom();
 	void retrieveRandom();
 	void retrieveRandomFromRoot(string file, int runN, int eventN);
 	void retrieveRandomFromEvio(string file, int runN, int eventN);
