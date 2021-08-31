@@ -1,6 +1,10 @@
 // c++ headers
 #include <iostream>
+
 #include <cstdlib>
+
+#include <vector>
+
 using namespace std;
 
 // gemc headers
@@ -43,10 +47,17 @@ using namespace gstring;
 #include "G4MuonDecayChannelWithSpin.hh"
 #include "G4GammaConversionToMuons.hh"
 
+
 //DarkPhoton
 #include "G4DarkPhotonAnnihilationProduction.h"
 #include "G4DarkMatter.h"
 #include "G4DarkPhoton.h"
+
+#include "G4HadronicProcessStore.hh"
+#include "G4HadronInelasticProcess.hh"
+#include "G4ProcessVector.hh"
+#include "G4HadronicProcessType.hh"
+
 
 // CLHEP units
 #include "CLHEP/Units/PhysicalConstants.h"
@@ -412,9 +423,17 @@ void PhysicsList::ConstructProcess() {
 
 		g4ParticleList->ConstructProcess();
 
-		for (size_t i = 0; i < g4HadronicPhysics.size(); i++)
-			g4HadronicPhysics[i]->ConstructProcess();
 
+		for (size_t i = 0; i < g4HadronicPhysics.size(); i++)
+
+		cout<<"Hadron processes: "<<endl;
+		for(size_t i=0; i<g4HadronicPhysics.size(); i++){
+		  cout<<i<<": "<<g4HadronicPhysics[i]->GetPhysicsName()<<endl;
+
+			g4HadronicPhysics[i]->ConstructProcess();
+		}
+ 
+		
 		// sync radiation
 		G4SynchrotronRadiation *fSync = nullptr;
 		G4SynchrotronRadiationInMat *fSyncMat = nullptr;
@@ -509,6 +528,29 @@ void PhysicsList::ConstructProcess() {
 			pmanager->AddDiscreteProcess(myDarkPhotonAnnihilationProduction);
 
 		}
+
+	const G4ParticleDefinition* particle = G4Gamma::Gamma();
+	G4ProcessManager* pmanager = particle->GetProcessManager();
+	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
+	
+
+	
+	
+
+
+
+	auto processes=G4Gamma::Gamma()->GetProcessManager()->GetProcessList();
+	G4VProcess *proc;
+	for (int ii=0;ii<processes->size();ii++){
+	  proc=(*processes)[ii];
+	  if (proc->GetProcessName()=="photonNuclear"){
+	    auto hadr_proc=dynamic_cast<G4HadronInelasticProcess*>(proc);
+	    cout<<"GOT IT: "<<hadr_proc<<" "<<endl;
+	    hadr_proc->BiasCrossSectionByFactor(1E5);
+	  }
+	}
+	//	auto photoNuc=procStore->FindProcess(G4Gamma::Gamma(),fHadronInelastic);
+	//cout<<photoNuc<<endl;
 
 
 	}
