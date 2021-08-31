@@ -194,7 +194,7 @@ MEventAction::MEventAction(goptions opts, map<string, double> gpars) {
 
     //These are for JPOS_3 trigger (HCAL)
     do_JPOS_TRG_3 = false;
-    SDprompt_2 = "";
+    SDprompt_3 = "";
     Eprompt_MIN_3 = 0;
     Eprompt_MAX_3 = 100 * TeV;
     Tprompt_MIN_3 = 0;
