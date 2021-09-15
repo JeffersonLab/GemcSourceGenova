@@ -76,7 +76,7 @@ void MSteppingAction::UserSteppingAction(const G4Step *aStep) {
             if (aStep->GetPreStepPoint()->GetSensitiveDetector() != 0) {
                 G4VSensitiveDetector *SD = aStep->GetPreStepPoint()->GetSensitiveDetector();
                 if (((string) SD->GetName()) == evt_action->SDprompt_2) {
-                    if ((aStep->GetPreStepPoint()->GetGlobalTime() >= evt_action->Tprompt_MIN) && (aStep->GetPreStepPoint()->GetGlobalTime() <= evt_action->Tprompt_MAX) && (track->GetParentID() != 0)) {
+                    if ((aStep->GetPreStepPoint()->GetGlobalTime() >= evt_action->Tprompt_MIN) && (aStep->GetPreStepPoint()->GetGlobalTime() <= evt_action->Tprompt_MAX)) {
                         evt_action->Eprompt_2 += track->GetKineticEnergy();
                     }
                 }
