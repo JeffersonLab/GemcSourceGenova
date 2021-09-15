@@ -47,6 +47,16 @@ using namespace gstring;
 #include "G4MuonDecayChannelWithSpin.hh"
 #include "G4GammaConversionToMuons.hh"
 
+#include "G4HadronPhysicsFTFP_BERT_HP.hh"
+#include "G4HadronPhysicsFTFP_BERT_TRV.hh"
+#include "G4HadronPhysicsFTF_BIC.hh"
+#include "G4HadronPhysicsQGSP_BERT.hh"
+#include "G4HadronPhysicsQGSP_BERT_HP.hh"
+#include "G4HadronPhysicsQGSP_BIC.hh"
+#include "G4HadronPhysicsQGSP_BIC_HP.hh"
+#include "G4HadronPhysicsQGSP_FTFP_BERT.hh"
+#include "G4HadronPhysicsShielding.hh"
+
 
 //DarkPhoton
 #include "G4DarkPhotonAnnihilationProduction.h"
@@ -529,8 +539,8 @@ void PhysicsList::ConstructProcess() {
 
 		}
 
-	const G4ParticleDefinition* particle = G4Gamma::Gamma();
-	G4ProcessManager* pmanager = particle->GetProcessManager();
+        particle = G4Gamma::Gamma();
+	pmanager = particle->GetProcessManager();
 	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
 	
 
@@ -545,13 +555,9 @@ void PhysicsList::ConstructProcess() {
 	  proc=(*processes)[ii];
 	  if (proc->GetProcessName()=="photonNuclear"){
 	    auto hadr_proc=dynamic_cast<G4HadronInelasticProcess*>(proc);
-	    cout<<"GOT IT: "<<hadr_proc<<" "<<endl;
-	    hadr_proc->BiasCrossSectionByFactor(1E5);
+	    //cout<<"GOT IT: "<<hadr_proc<<" "<<endl;
+	    //hadr_proc->BiasCrossSectionByFactor(1E5);
 	  }
 	}
-	//	auto photoNuc=procStore->FindProcess(G4Gamma::Gamma(),fHadronInelastic);
-	//cout<<photoNuc<<endl;
-
-
 	}
 }
