@@ -78,6 +78,9 @@ env.Library(source = sensi_sources, target = "lib/gsensitivity")
 # Physics
 env.Append(CPPPATH = 'physics')
 phys_sources = Split("""
+	physics/G4DarkMatter.cc
+	physics/G4DarkPhoton.cc
+	physics/G4DarkPhotonAnnihilationProduction.cc
 	physics/PhysicsList.cc
 	physics/PhysicsListMessenger.cc""")
 env.Library(source = phys_sources, target = "lib/gphysics")
@@ -106,7 +109,11 @@ hitp_sources = Split("""
 	hitprocess/bdx/cormo_hitprocess.cc
 	hitprocess/bdx/veto_hitprocess.cc
 	hitprocess/bdx/crs_hitprocess.cc
-	hitprocess/eee/eee_veto_hitprocess.cc""")
+	hitprocess/eee/eee_veto_hitprocess.cc
+	hitprocess/JPOS/JPOS_crs_hitprocess.cc
+	hitprocess/JPOS/JPOS_HCAL_hitprocess.cc
+        hitprocess/poker/poker_crs_hitprocess.cc""")
+
 env.Library(source = hitp_sources, target = "lib/ghitprocess")
 
 

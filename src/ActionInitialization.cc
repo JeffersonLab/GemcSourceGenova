@@ -6,8 +6,8 @@
 
 ActionInitialization::ActionInitialization(goptions* go, map<string, double> *gPars) : G4VUserActionInitialization()
 {
-	genAction = new MPrimaryGeneratorAction(go);
-	evtAction = new MEventAction(*go, *gPars);
+    evtAction = new MEventAction(*go, *gPars);
+	genAction = new MPrimaryGeneratorAction(go,evtAction);
 	stpAction = new MSteppingAction(*go);
 }
 

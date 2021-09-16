@@ -363,6 +363,7 @@ int sensitiveDetector::processID(string procName)
 	if(procName == "ionIoni")               return 120;
 	if(procName == "ionInelastic")          return 121;
 	if(procName == "tInelastic")            return 130;
+	if(procName == "GammaToMuPair")         return 131;
 
 	if(procName == "na")                    return 999;
 

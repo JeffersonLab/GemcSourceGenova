@@ -20,6 +20,7 @@ using namespace std;
 // - any G4 phys list
 // - em_std, em_opt1, em_opt2, em_opt3, em_opt4
 // - optical
+class G4DarkPhotonAnnihilationProduction;
 class PhysicsList: public G4VModularPhysicsList
 {
 public:
@@ -65,6 +66,8 @@ private:
 	G4VPhysicsConstructor*  g4ParticleList;
 	vector<G4VPhysicsConstructor*>  g4HadronicPhysics;
 	G4DecayWithSpin*        theDecayProcess;
+
+
 
 	// build the geant4 physics
 	void cookPhysics();
