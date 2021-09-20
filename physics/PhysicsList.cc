@@ -512,52 +512,43 @@ void PhysicsList::ConstructProcess() {
 
 		const G4ParticleDefinition *particle = G4Gamma::Gamma();
 		G4ProcessManager *pmanager = particle->GetProcessManager();
-    G4GammaConversionToMuons* GCTM = new G4GammaConversionToMuons;
-	  GCTM -> SetCrossSecFactor(1);
-	  pmanager->AddDiscreteProcess(GCTM);
+		G4GammaConversionToMuons* GCTM = new G4GammaConversionToMuons;
+		GCTM -> SetCrossSecFactor(1);
+		pmanager->AddDiscreteProcess(GCTM);
+		
+		
+		auto processes=G4Gamma::Gamma()->GetProcessManager()->GetProcessList();
+		G4VProcess *proc;
+		for (int ii=0;ii<processes->size();ii++){
+		  proc=(*processes)[ii];
+		  if (proc->GetProcessName()=="photonNuclear"){
+		    auto hadr_proc=dynamic_cast<G4HadronInelasticProcess*>(proc);
+		    //cout<<"GOT IT: "<<hadr_proc<<" "<<endl;
+	      //hadr_proc->BiasCrossSectionByFactor(1E5);
+		  }
+		}
+		
 		
 		if (gemcOpt.optMap["DARK_PHOTON"].args == "no" || gemcOpt.optMap["DARK_MATTER"].args == "no" || gemcOpt.optMap["DARK_COUPLINGS"].args == "no") {
-			return;
+		  return;
 		} else {
-			//A' production
-			vector<string> valuesC;
-			valuesC = get_info(gemcOpt.optMap["DARK_COUPLINGS"].args);
-			if (valuesC.size() != 2) {
-				cout << " ERROR, DARK_COUPLINGS should follow with two numbers: eps and alphaD, as in 1E-4,0.1" << endl;
-				exit(1);
-			}
-
-			G4double eps = get_number(valuesC[0]);
-			G4double alphaD = get_number(valuesC[1]);
-
-			particle = G4Positron::Positron();
-			pmanager = particle->GetProcessManager();
-			G4DarkPhotonAnnihilationProduction* myDarkPhotonAnnihilationProduction = new G4DarkPhotonAnnihilationProduction;
-			myDarkPhotonAnnihilationProduction->SetEps(eps);
-			myDarkPhotonAnnihilationProduction->SetAlphaD(alphaD);
-			pmanager->AddDiscreteProcess(myDarkPhotonAnnihilationProduction);
-
+		  //A' production
+		  vector<string> valuesC;
+		  valuesC = get_info(gemcOpt.optMap["DARK_COUPLINGS"].args);
+		  if (valuesC.size() != 2) {
+		    cout << " ERROR, DARK_COUPLINGS should follow with two numbers: eps and alphaD, as in 1E-4,0.1" << endl;
+		    exit(1);
+		  }
+		  
+		  G4double eps = get_number(valuesC[0]);
+		  G4double alphaD = get_number(valuesC[1]);
+		  
+		  particle = G4Positron::Positron();
+		  pmanager = particle->GetProcessManager();
+		  G4DarkPhotonAnnihilationProduction* myDarkPhotonAnnihilationProduction = new G4DarkPhotonAnnihilationProduction;
+		  myDarkPhotonAnnihilationProduction->SetEps(eps);
+		  myDarkPhotonAnnihilationProduction->SetAlphaD(alphaD);
+		  pmanager->AddDiscreteProcess(myDarkPhotonAnnihilationProduction);
 		}
-
-        particle = G4Gamma::Gamma();
-	pmanager = particle->GetProcessManager();
-	pmanager->AddDiscreteProcess(new G4GammaConversionToMuons);
-	
-
-	
-	
-
-
-
-	auto processes=G4Gamma::Gamma()->GetProcessManager()->GetProcessList();
-	G4VProcess *proc;
-	for (int ii=0;ii<processes->size();ii++){
-	  proc=(*processes)[ii];
-	  if (proc->GetProcessName()=="photonNuclear"){
-	    auto hadr_proc=dynamic_cast<G4HadronInelasticProcess*>(proc);
-	    //cout<<"GOT IT: "<<hadr_proc<<" "<<endl;
-	    //hadr_proc->BiasCrossSectionByFactor(1E5);
-	  }
-	}
 	}
 }
