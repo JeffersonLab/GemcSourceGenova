@@ -801,8 +801,8 @@ void goptions::setGoptions() {
 	optMap["DARK_MATTER"].ctgr = "dark_photon";
 
 	optMap["DARK_COUPLINGS"].args = "no";
-	optMap["DARK_COUPLINGS"].help = "Dark photon couplings: eps, alphaD\n";
-	optMap["DARK_COUPLINGS"].help += "example: -DARK_COUPLINGS=\"0.001,0.5\"";
+	optMap["DARK_COUPLINGS"].help = "Dark photon couplings: eps, alphaD, min_kin_energy\n";
+	optMap["DARK_COUPLINGS"].help += "example: -DARK_COUPLINGS=\"0.001,0.5,0.1*GeV\"";
 	optMap["DARK_COUPLINGS"].type = 1;
 	optMap["DARK_COUPLINGS"].ctgr = "dark_photon";
 

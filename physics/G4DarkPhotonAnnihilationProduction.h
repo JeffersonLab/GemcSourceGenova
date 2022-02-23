@@ -72,6 +72,13 @@ public:
 	G4double GetAlphaD() {
 		return alphaD;
 	}
+
+	G4double GetEnergyCut(){
+	  return eCut;
+	}
+	
+	void SetEnergyCut(G4double fac);
+
 	// Get the factor to artificially increase the cross section
 
 	G4double ComputeMeanFreePath(G4double KineticEnergy, G4Material *aMaterial);
@@ -98,7 +105,7 @@ private:
 	G4double MeanFreePath;           // actual MeanFreePath (current medium)
 	G4double CrossSecFactor;         // factor to artificially increase
 
-
+	G4double eCut;
 
 
 };

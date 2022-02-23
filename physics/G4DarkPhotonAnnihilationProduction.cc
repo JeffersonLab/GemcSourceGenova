@@ -104,7 +104,7 @@ G4double G4DarkPhotonAnnihilationProduction::ComputeCrossSectionPerAtom(G4double
 	// Calculates the microscopic cross section in GEANT4 internal units.
 	// Note that this function also reads data "on the fly", storing data in the map
 
-	if (Ekin <= LowestEnergyLimit) return 0; // below threshold return 0
+	if (Ekin <= eCut) return 0; // below threshold return 0
 	G4double CrossSection = 0.0;
 	G4double ZNucl = anElement->GetZ();
 
@@ -230,4 +230,10 @@ void G4DarkPhotonAnnihilationProduction::SetAlphaD(G4double fac) {
 
 	alphaD = fac;
 	std::cout << "The alphaD value for A' resonant production is set to " << alphaD << std::endl;
+}
+
+void G4DarkPhotonAnnihilationProduction::SetEnergyCut(G4double fac) {
+// Set the factor to artificially increase the cross section
+	eCut = fac;
+	std::cout << "The energy value for A' resonant production is set to " << eCut/GeV <<" GeV "<< std::endl;
 }

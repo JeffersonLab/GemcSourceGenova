@@ -542,12 +542,13 @@ void PhysicsList::ConstructProcess() {
 		  
 		  G4double eps = get_number(valuesC[0]);
 		  G4double alphaD = get_number(valuesC[1]);
-		  
+		  G4double eCut = get_number(valuesC[2]);
 		  particle = G4Positron::Positron();
 		  pmanager = particle->GetProcessManager();
 		  G4DarkPhotonAnnihilationProduction* myDarkPhotonAnnihilationProduction = new G4DarkPhotonAnnihilationProduction;
 		  myDarkPhotonAnnihilationProduction->SetEps(eps);
 		  myDarkPhotonAnnihilationProduction->SetAlphaD(alphaD);
+		  myDarkPhotonAnnihilationProduction->SetEnergyCut(eCut);
 		  pmanager->AddDiscreteProcess(myDarkPhotonAnnihilationProduction);
 		}
 	}
