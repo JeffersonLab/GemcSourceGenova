@@ -1,15 +1,15 @@
-#ifndef poker_crs_HITPROCESS_H
-#define poker_crs_HITPROCESS_H 1
+#ifndef poker_hcal_HITPROCESS_H
+#define poker_hcal_HITPROCESS_H 1
 
 // gemc headers
 #include "HitProcess.h"
 
 // Class definition
-class poker_crs_HitProcess : public HitProcess
+class poker_hcal_HitProcess : public HitProcess
 {
 public:
 
-	~poker_crs_HitProcess(){;}
+	~poker_hcal_HitProcess(){;}
 
 	// - integrateDgt: returns digitized information integrated over the hit
 	map<string, double> integrateDgt(MHit*, int);
@@ -28,12 +28,7 @@ public:
 	vector<identifier> processID(vector<identifier>, G4Step*, detector);
 
 	// creates the HitProcess
-	static HitProcess *createHitClass() {return new crs_HitProcess;}
-
-	double BirksAttenuation(double,double,int,double);
-	double BirksAttenuation2(double,double,int,double);
-    double* WaveForm(double,double*);
-    double* WaveFormPbwo(double,double*);
+	static HitProcess *createHitClass() {return new poker_hcal_HitProcess;}
 
 	// - electronicNoise: returns a vector of hits generated / by electronics.
 	vector<MHit*> electronicNoise();
