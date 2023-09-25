@@ -10,7 +10,10 @@
 using namespace CLHEP;
 
 map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
+    
+
 	map<string, double> dgtz;
+
 	vector<identifier> identity = aHit->GetId();
 
 	int sector = identity[0].id;
@@ -19,13 +22,16 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
     int zch = identity[3].id;
 
 
-	// PbWO4 parameters
-    double sensor_surface_crs = pow(0.6 * cm, 2);
-	double	sensor_qe_crs = 0.22; // consider only 25um sipm
+	// Sensor parameters
+    double sensor_surface_crs = pow(2*0.6 * cm, 2);
+    double sipm_pixel_area = pow(2*0.001 * cm, 2);
+    int sipm_N_pixels = sensor_surface_crs/sipm_pixel_area;
+	double	sensor_qe_crs = 0.18; // consider only 10um sipm
 	double	optical_coupling = 0.9;
 	double	att_length_crs = 60000 * cm; // compatible with NO ATT Lenght as measured for cosmic muons
-	double  light_yield_crs = 310 * (1. / MeV);
 	
+    // PbWO4 parameters
+    double  light_yield_crs = 310 * (1. / MeV);
 	double length_crs; //(in mm)
 	double sside_crs;
 	double lside_crs;
@@ -33,19 +39,13 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	sside_crs = 2 * aHit->GetDetector().dimensions[0];
 	lside_crs = 2 * aHit->GetDetector().dimensions[2];
 	double redout_surface_crs = sside_crs * lside_crs * mm * mm;
-	//cout<<"Sector="<<sector << endl;
-	//cout<<"length_crs="<<length_crs << endl;
-	//cout<<"sside_crs="<<sside_crs << endl;
-	//cout<<"lside_crs="<<lside_crs << endl;
-	//cout<<"redout_surface_crs="<<redout_surface_crs<< endl;
-
 	double light_coll_crs = sensor_surface_crs / redout_surface_crs;
 	if (light_coll_crs > 1) light_coll_crs = 1.;
-	//cout<<"light_coll_crs="<<light_coll_crs<< endl;
-//    double sensor_pe_crs=20; //20mV*100ns/50Ohm/2 -> 1 pe = 20 pC
-//    double sensor_gain_crs=1;
-	// ! requires to be matched with the Babar crystal individual geometry (32,5 cm)
-	double etotL_crs = 0; //L= Large side redout
+
+    
+    
+    
+    double etotL_crs = 0; //L= Large side redout
 	double timeL_crs = 0;
     
 	double veff_crs = 30 / 1.8 * cm / ns;                     // light velocity in crystal
@@ -58,9 +58,6 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	double TDCL_crs = 4096;
 	double TDCB = 4096;
 
-	// Get the paddle length: in crs paddles are along y
-//	double length = aHit->GetDetector().dimensions[2];
-	//double length = 20*cm;
 
 	// Get info about detector material to eveluate Birks effect
 	double birks_constant = aHit->GetDetector().GetLogical()->GetMaterial()->GetIonisation()->GetBirksConstant();
@@ -71,7 +68,7 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	vector<G4double> Edep = aHit->GetEdep();
 	vector<G4double> Dx = aHit->GetDx();
 
-	//cout<<length_crs<< endl;
+
 
 	// Charge for each step
 	vector<int> charge = aHit->GetCharges();
@@ -79,11 +76,21 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	//vector<string> theseMats = aHit->GetMaterials();
 
 	unsigned int nsteps = Edep.size();
-	double Etot_crs = 0;
     
-	double peL_int_crs;
+	double Etot_crs = 0;
+    double N_photons =0;
 	double peL_crs = 0.;
-	int Nsamp_int = 250;  // 1.0us
+    int Nsamp_int = 250;  // 1.0us
+    double* test_pbwo;
+    double tim_pbwo;
+    double dene =0;
+    double N_fired_cells =0;
+    int peL_WB_S =0;
+    int peL_WB_NoS =0;
+    int Ampl_noS =0;
+    int Ampl_S =0;
+    
+
 	//double sigmaTR_crs=sqrt(pow(5.*nanosecond,2.)+pow(10.*nanosecond,2.)/(peR_crs/10.+1.));
 	double sigmaTR_crs = 0.;
 
@@ -93,6 +100,7 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 
 	double Etot_B_crs = 0;
 	double Etot_noB_crs = 0.;
+
 	if (Etot_crs > 0) {
 		for (unsigned int s = 0; s < nsteps; s++) {   //Reference vie for cal matrix:
 													  //cristals with short size pointing downstream
@@ -119,10 +127,46 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 		}
 
 		// Left readout (small size side)
-		peL_crs = etotL_crs * light_yield_crs * sensor_qe_crs * optical_coupling * light_coll_crs;
-        ADCL_crs = G4Poisson(peL_crs);
+        
+        // n photons
+        N_photons = etotL_crs * light_yield_crs* optical_coupling * light_coll_crs;
+        
+		//N pe - no saturation
+        peL_crs = N_photons * sensor_qe_crs;
+      //  peL_crs = G4Poisson(peL_crs);
+        
+        test_pbwo = WaveFormPbwo(peL_crs, &tim_pbwo);
+        
+        int max=0;
+        
+        for (unsigned int s = 0; s < Nsamp_int; s++) {
+            if(test_pbwo[s] > max) max = test_pbwo[s];
+            peL_WB_NoS = peL_WB_NoS + test_pbwo[s];
+            
+        }
+        
+        Ampl_noS = max;
 
+        dene = peL_WB_NoS/(light_yield_crs * sensor_qe_crs * optical_coupling * light_coll_crs * 0.5);
+        
+        
+        //number of fired cells taking into account SiPM saturation effect - NIM A 926 (2019) 16–35;
+     
 
+        
+        N_fired_cells = sipm_N_pixels * (1 - exp(- N_photons*sensor_qe_crs/sipm_N_pixels));
+        
+       
+        test_pbwo = WaveFormPbwo(N_fired_cells, &tim_pbwo);
+        max=0;
+        for (unsigned int s = 0; s < Nsamp_int; s++) {
+            if(test_pbwo[s] > max) max = test_pbwo[s];
+            peL_WB_S = peL_WB_S + test_pbwo[s];
+        }
+
+         Ampl_S =max;
+        
+        
 	}
 	// closes (Etot > 0) loop
 
@@ -133,14 +177,14 @@ map<string, double> poker_crs_HitProcess::integrateDgt(MHit* aHit, int hitn) {
 	dgtz["xch"] = xch;
 	dgtz["ych"] = ych;
     dgtz["zch"] = zch;
-	dgtz["adcl"] = ADCL_crs;	  //
-	dgtz["adcr"] = ADCR_crs;	  //SIPM 25um -> large size for matrix, small size for single
-	dgtz["tdcl"] = TDCL_crs;	  //
-	dgtz["adcb"] = Etot_B_crs;  // deposited energy with Birks
-	dgtz["dene"] = Etot_noB_crs;
-	dgtz["tdcb"] = TDCB * 1000.;	  //original time in ps
-	dgtz["tdcf"] = 0;
-
+	dgtz["pe_noS"] = peL_WB_NoS;
+	dgtz["pe_S"] = peL_WB_S;
+	dgtz["dene"] = dene;
+	dgtz["Ampl_noS"] = Ampl_noS;  // deposited energy with Birks
+	dgtz["Ampl_S"] = Ampl_S;
+    
+	//dgtz["tdcb"] = TDCB * 1000.;	  //original time in ps
+	//dgtz["tdcf"] = 0;
 
 	return dgtz;
 }

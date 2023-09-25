@@ -1,4 +1,4 @@
-from init_env import init_environment
+efrom init_env import init_environment
 
 # adding ccdb as temporary dependency
 # will be removed once the hit process routines are plugins
@@ -113,7 +113,7 @@ hitp_sources = Split("""
 	hitprocess/JPOS/JPOS_crs_hitprocess.cc
 	hitprocess/JPOS/JPOS_HCAL_hitprocess.cc
     hitprocess/poker/poker_crs_hitprocess.cc
-    hitprocess/poker/poker_hcal_hitprocess.cc""")
+    hitprocess/poker/poker_scint_hitprocess.cc""")
 
 env.Library(source = hitp_sources, target = "lib/ghitprocess")
 
